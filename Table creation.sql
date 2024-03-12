@@ -4,6 +4,10 @@ CREATE TABLE [dbo].[Address](
     [City] [nvarchar](255) NOT NULL,
     [Street] [nvarchar](255) NOT NULL,
     [Building] [nvarchar](255) NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
 	CONSTRAINT PK_Address PRIMARY KEY ([AddressId])
 )
 GO
@@ -12,6 +16,10 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RoomType' and xtype='U')
 CREATE TABLE [dbo].[RoomType](
     [RoomTypeId] [int] NOT NULL,
     [Type] [nvarchar](20)  NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT PK_RoomType PRIMARY KEY ([RoomTypeId])
 )
 GO
@@ -22,6 +30,10 @@ CREATE TABLE [dbo].[Price](
     [StartDate] [date] NOT NULL,
     [EndDate] [date] NULL,
     [RoomTypeId] [int] NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT PK_Price PRIMARY KEY ([PriceId])
 )
 GO
@@ -39,6 +51,10 @@ CREATE TABLE [dbo].[Room](
     [RoomId] [uniqueidentifier] NOT NULL,
     [Area] [int]  NOT NULL,
     [RoomTypeId] [int] NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT PK_Price PRIMARY KEY ([RoomId])
 )
 GO
@@ -56,6 +72,10 @@ CREATE TABLE [dbo].[Owner](
     [OwnerId] [uniqueidentifier] NOT NULL,
     [Name] [nvarchar](50) NOT NULL,
     [AddressId] [uniqueidentifier] NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT [PK_Owner] PRIMARY KEY ([OwnerId])
 )
 GO
@@ -75,6 +95,10 @@ CREATE TABLE [dbo].[OwnerShip](
     [RoomId] [uniqueidentifier] NOT NULL,
     [StartDate] [date] NOT NULL,
     [EndDate] [date] NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT [PK_OwnerShip] PRIMARY KEY([OwnerShipId])
 )
 GO
@@ -103,6 +127,10 @@ CREATE TABLE [dbo].[Tenant](
     [AddressId] [uniqueidentifier] NOT NULL,
     [Director] [nvarchar](50) NOT NULL,
     [Description] [nvarchar](255) NOT NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT [PK_Tenant] PRIMARY KEY([TenantId])
 )
 GO
@@ -122,6 +150,10 @@ CREATE TABLE [dbo].[Account](
     [ToBePaidAmount] [numeric](18, 2) NOT NULL,
     [StartDate] [date] NOT NULL,
 	[EndDate] [date] NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT [PK_Account] PRIMARY KEY ([AccountId])
 )
 GO
@@ -141,6 +173,10 @@ CREATE TABLE [dbo].[Rent](
     [TenantId] [uniqueidentifier] NOT NULL,
     [StartDate] [date] NOT NULL,
     [EndDate] [date] NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedDateTime] [datetime] NOT NULL,
+	[ModifiedBy] [uniqueidentifier] NULL,
+	[ModifiedDateTime] [datetime] NULL,
     CONSTRAINT [PK_Rent] PRIMARY KEY ([RentId])
 )
 GO
