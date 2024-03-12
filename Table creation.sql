@@ -5,9 +5,9 @@ CREATE TABLE [dbo].[Address](
     [Street] [nvarchar](255) NOT NULL,
     [Building] [nvarchar](255) NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
 	CONSTRAINT PK_Address PRIMARY KEY ([AddressId])
 )
 GO
@@ -17,9 +17,9 @@ CREATE TABLE [dbo].[RoomType](
     [RoomTypeId] [int] NOT NULL,
     [Name] [nvarchar](20)  NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT PK_RoomType PRIMARY KEY ([RoomTypeId])
 )
 GO
@@ -27,18 +27,18 @@ GO
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Price' and xtype='U')
 CREATE TABLE [dbo].[Price](
     [PriceId] [uniqueidentifier] NOT NULL,
-    [StartDate] [date] NOT NULL,
-    [Value] [decimal](5,2) NOT NULL,
-    [EndDate] [date] NULL,
+    [StartDate] [datetime2] NOT NULL,
+    [Value] [numeric](5,2) NOT NULL,
+    [EndDate] [datetime2] NULL,
     [RoomTypeId] [int] NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
-	[ValidFrom] datetime2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
-    [ValidTo] datetime2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    [ModifiedDateTime] [datetime2] NULL,
+	[ValidFrom] [datetime2] GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    [ValidTo] [datetime2] GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
-	CONSTRAINT PK_Price PRIMARY KEY ([PriceId]),
+	CONSTRAINT [PK_Price] PRIMARY KEY ([PriceId]),
 )
 WITH
 (
@@ -61,9 +61,9 @@ CREATE TABLE [dbo].[Room](
     [Area] [numeric](18, 2)  NOT NULL,
     [RoomTypeId] [int] NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_Room] PRIMARY KEY ([RoomId])
 )
 GO
@@ -82,9 +82,9 @@ CREATE TABLE [dbo].[Owner](
     [Name] [nvarchar](50) NOT NULL,
     [AddressId] [uniqueidentifier] NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_Owner] PRIMARY KEY ([OwnerId])
 )
 GO
@@ -103,9 +103,9 @@ CREATE TABLE [dbo].[Asset](
     [OwnerId] [uniqueidentifier] NOT NULL,
     [RoomId] [uniqueidentifier] NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_OwnerShip] PRIMARY KEY([AssetId])
 )
 GO
@@ -135,9 +135,9 @@ CREATE TABLE [dbo].[Tenant](
     [Director] [nvarchar](50) NOT NULL,
     [Description] [nvarchar](255) NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_Tenant] PRIMARY KEY([TenantId])
 )
 GO
@@ -156,12 +156,12 @@ CREATE TABLE [dbo].[Bill](
     [TenantId] [uniqueidentifier] NOT NULL,
     [AssetId] [uniqueidentifier] NOT NULL,
     [BillAmount] [numeric](18, 2) NOT NULL,
-    [IssueDate] [date] NOT NULL,
-    [EndDate] [date] NULL,
+    [IssueDate] [datetime2] NOT NULL,
+    [EndDate] [datetime2] NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_Bill] PRIMARY KEY ([BillId])
 )
 GO
@@ -187,12 +187,12 @@ CREATE TABLE [dbo].[Rent](
     [RentId] [uniqueidentifier] NOT NULL,
     [AssetId] [uniqueidentifier] NOT NULL,
     [TenantId] [uniqueidentifier] NOT NULL,
-    [StartDate] [date] NOT NULL,
-    [EndDate] [date] NULL,
+    [StartDate] [datetime2] NOT NULL,
+    [EndDate] [datetime2] NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
-    [CreatedDateTime] [datetime] NOT NULL,
+    [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime] NULL,
+    [ModifiedDateTime] [datetime2] NULL,
     CONSTRAINT [PK_Rent] PRIMARY KEY ([RentId])
 )
 GO
@@ -216,17 +216,17 @@ GO
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Impost' and xtype='U')
 CREATE TABLE [dbo].[Impost](
     [ImpostId] [uniqueidentifier] NOT NULL,
-    [Tax] [decimal](4,2) NOT NULL,
-    [Fine] [decimal](3,2) NOT NULL,
+    [Tax] [numeric](4,2) NOT NULL,
+    [Fine] [numeric](3,2) NOT NULL,
     [PaymentDate] [int] NOT NULL,
-    [StartDate] [date] NOT NULL,
-    [EndDate] [date] NULL,
+    [StartDate] [datetime2] NOT NULL,
+    [EndDate] [datetime2] NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
     [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
     [ModifiedDateTime] [datetime2] NULL,
-	[ValidFrom] datetime2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
-    [ValidTo] datetime2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+	[ValidFrom] [datetime2] GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    [ValidTo] [datetime2] GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME ([ValidFrom], [ValidTo]),
     CONSTRAINT [PK_Impost] PRIMARY KEY ([ImpostId])
 )
@@ -241,7 +241,8 @@ CREATE TABLE [dbo].[Payment](
     [PaymentId] [uniqueidentifier] NOT NULL,
     [TenantId] [uniqueidentifier] NOT NULL,
     [BillId] [uniqueidentifier] NOT NULL,
-    [PaymentDate] [datetime2] NOT NULL,
+    [PaymentDay] [datetime2] NOT NULL,
+	[Amount] [numeric](18, 2) NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
     [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
