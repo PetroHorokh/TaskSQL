@@ -218,7 +218,7 @@ CREATE TABLE [dbo].[Impost](
     [ImpostId] [uniqueidentifier] NOT NULL,
     [Tax] [numeric](4,2) NOT NULL,
     [Fine] [numeric](3,2) NOT NULL,
-    [PaymentDate] [int] NOT NULL,
+    [PaymentDay] [int] NOT NULL,
     [StartDate] [datetime2] NOT NULL,
     [EndDate] [datetime2] NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
