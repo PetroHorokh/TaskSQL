@@ -8,7 +8,7 @@ CREATE TABLE [dbo].[Address](
     [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
     [ModifiedDateTime] [datetime2] NULL,
-	CONSTRAINT PK_Address PRIMARY KEY ([AddressId])
+	CONSTRAINT [PK_Address] PRIMARY KEY ([AddressId])
 )
 GO
 
@@ -20,7 +20,7 @@ CREATE TABLE [dbo].[RoomType](
     [CreatedDateTime] [datetime2] NOT NULL,
     [ModifiedBy] [uniqueidentifier] NULL,
     [ModifiedDateTime] [datetime2] NULL,
-    CONSTRAINT PK_RoomType PRIMARY KEY ([RoomTypeId])
+    CONSTRAINT [PK_RoomType] PRIMARY KEY ([RoomTypeId])
 )
 GO
 
@@ -28,7 +28,7 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Price' and xtype='U')
 CREATE TABLE [dbo].[Price](
     [PriceId] [uniqueidentifier] NOT NULL,
     [StartDate] [datetime2] NOT NULL,
-    [Value] [numeric](5,2) NOT NULL,
+    [Value] [numeric](18,2) NOT NULL,
     [EndDate] [datetime2] NULL,
     [RoomTypeId] [int] NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
