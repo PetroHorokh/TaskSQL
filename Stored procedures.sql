@@ -437,6 +437,7 @@ BEGIN
 
 	INSERT INTO #TempAddressData
 	VALUES ('New York', 'Broadway', '123'),
+	('New York', 'Broadway', '124'),
     ('Los Angeles', 'Hollywood Blvd', '456'),
     ('London', 'Oxford Street', '789'),
     ('Paris', 'Champs-Élysées', '1011'),
