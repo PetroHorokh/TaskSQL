@@ -1308,5 +1308,43 @@ BEGIN
 	END
 
 	CLOSE Impost_cursor;
+
+	--Temp tables deletion
+	DROP TABLE #TempAddressCity;
+	DROP TABLE #TempAddressStreet;
+	DROP TABLE #TempAddressBuilding;
+	DROP TABLE #TempAddressId;
+	DROP TABLE #TempAddressData;
+	DROP TABLE #TempFirstName;
+	DROP TABLE #TempLastName;
+	DROP TABLE #TempOwnerId;
+	DROP TABLE #TempOwnerData;
+	DROP TABLE #TempOwner;
+	DROP TABLE #TempTenantName;
+	DROP TABLE #TempTenantDirectorName;
+	DROP TABLE #TempTenantBankName;
+	DROP TABLE #TempTenantDescription;
+	DROP TABLE #TempTenantId;
+	DROP TABLE #TempTenantData;
+	DROP TABLE #TempTenant;
+	DROP TABLE #TempRoomTypeId;
+	DROP TABLE #TempRoomTypeData;
+	DROP TABLE #TempDate;
+	DROP TABLE #TempPriceValue;
+	DROP TABLE #TempPriceData;
+	DROP TABLE #TempPrice;
+	DROP TABLE #TempRoomId;
+	DROP TABLE #TempRoomData;
+	DROP TABLE #TempRoom;
+	DROP TABLE #TempAssetId;
+	DROP TABLE #TempAsset;
+	DROP TABLE #TempRentId;
+	DROP TABLE #TempRent;
+	DROP TABLE #TempBillId;
+	DROP TABLE #TempBillData;
+	DROP TABLE #TempBill;
+	DROP TABLE #TempPaymentData;
+	DROP TABLE #TempPayment;
+	DROP TABLE #TempImpostData;
 END;
 GO
