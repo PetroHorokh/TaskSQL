@@ -410,6 +410,7 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Form_Bill]
 @EndDate [datetime2]
 AS
 BEGIN
+	SET NOCOUNT ON;
     DECLARE @TenantId [uniqueidentifier], @AssetId [uniqueidentifier], @DayesToPay [int], @Tax [numeric](18,2), @Fine [numeric](18,2), @Amount [numeric](18,2);
 
 	SELECT @TenantId = [Rent].[TenantId], @AssetId = [Rent].[AssetId] 
@@ -434,6 +435,7 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[sp_Test_Input]
 AS
 BEGIN
+	SET NOCOUNT ON;
     --Temp tables
 	CREATE TABLE #TempAddressCity
 	([City] [nvarchar](255));
