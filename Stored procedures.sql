@@ -24,16 +24,16 @@ BEGIN
 		    DECLARE @AddressId [uniqueidentifier] = NEWID();
 			BEGIN TRANSACTION;
 			    INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building], [CreatedBy], [CreatedDateTime])
-                SELECT NEWID(), @City, @Street, @Building, '00000000-0000-0000-0000-000000000000', GETDATE();
+                SELECT @AddressId, @City, @Street, @Building, '00000000-0000-0000-0000-000000000000', GETDATE();
             COMMIT TRANSACTION; 
 			SELECT @AddressId AS [AddressId]
 	    END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
             RAISERROR( @Message , 11, 0);
+            ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -54,9 +54,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
             RAISERROR( @Message , 11, 4);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -80,9 +80,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
             RAISERROR( @Message , 11, 10);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -118,14 +118,15 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 9);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Price_Insert]
+@StartDate [datetime2],
 @Value [numeric](18,2),
 @EndDate [datetime2],
 @RoomTypeId [int]
@@ -133,27 +134,28 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-
-		IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[RoomType] [RoomType]
-			WHERE [RoomType].[RoomTypeId] = @RoomTypeId
+	    IF EXISTS( SELECT 1
+	        FROM [dbo].[Price] [Price]
+			WHERE (@StartDate BETWEEN [Price].[StartDate] AND [Price].[EndDate] 
+			    OR @EndDate BETWEEN [Price].[StartDate] AND [Price].[EndDate])
+				AND [Price].[RoomTypeId] = @RoomTypeId
 		)
 		BEGIN
-		    RAISERROR( 'There is no room type with such name' , 1, 6) WITH NOWAIT;
+		    RAISERROR( 'There is already price in this period for given room type' , 1, 6) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
-		    BEGIN TRANSACTION;
+			BEGIN TRANSACTION;
                 INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId], [CreatedBy], [CreatedDateTime])
-                SELECT NEWID(), GETDATE(), @Value, @EndDate, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
+                SELECT NEWID(), @StartDate, @Value, @EndDate, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
             COMMIT TRANSACTION;
 		END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 6);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -202,9 +204,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 8);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -217,39 +219,27 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
 		IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[Room] [Room]
-			WHERE [Room].[RoomId] = @RoomId
-		)
+		    FROM [dbo].[Owner] [Owner]
+		    WHERE [Owner].[OwnerId] = @OwnerId
+	    )
 		BEGIN
-		    RAISERROR( 'There is no room with such number' , 1, 1) WITH NOWAIT;
+		    RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
-		    IF NOT EXISTS(SELECT 1
-		        FROM [dbo].[Owner] [Owner]
-			    WHERE [Owner].[OwnerId] = @OwnerId
-		    )
-			BEGIN
-			    RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-			    DECLARE @AssetId [uniqueidentifier] = NEWID();
-			    BEGIN TRANSACTION;
-                    INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId], [CreatedBy], [CreatedDateTime])
-                    SELECT @AssetId, @OwnerId, @RoomId, '00000000-0000-0000-0000-000000000000', GETDATE();
-                COMMIT TRANSACTION;    
-                SELECT @AssetId AS [AssetId]
-			END
-
-            
+			DECLARE @AssetId [uniqueidentifier] = NEWID();
+			BEGIN TRANSACTION;
+                INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId], [CreatedBy], [CreatedDateTime])
+                SELECT @AssetId, @OwnerId, @RoomId, '00000000-0000-0000-0000-000000000000', GETDATE();
+            COMMIT TRANSACTION;    
+            SELECT @AssetId AS [AssetId]
 		END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 1);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -293,9 +283,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 2);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -330,9 +320,9 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
             RAISERROR( @Message , 11, 3);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -346,37 +336,35 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-        IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[Tenant] [Tenant]
-			WHERE [Tenant].[TenantId] = @TenantId
-		)
+
+		IF @PaymentDay IS NULL
 		BEGIN
-		    RAISERROR( 'There is no such tenant', 1, 7) WITH NOWAIT;
-	    END
+			RAISERROR( 'PaymentDay is not defined', 1, 7) WITH NOWAIT;
+		END
 		ELSE
 		BEGIN
-		    IF NOT EXISTS(SELECT 1
-			    FROM [dbo].[Bill] [Bill]
-				WHERE [Bill].[BillId] = @BillId
-				    AND [Bill].[TenantId] = @TenantId
+			IF NOT EXISTS(SELECT 1
+		    FROM [dbo].[Bill] [Bill]
+			WHERE [Bill].[BillId] = @BillId
+			    AND [Bill].[TenantId] = @TenantId
 			)
 			BEGIN
-			    RAISERROR( 'There is no such bill for this tenant', 1, 7) WITH NOWAIT;
+				RAISERROR( 'There is no such bill for this tenant', 1, 7) WITH NOWAIT;
 			END
 			ELSE
 			BEGIN
-			    BEGIN TRANSACTION;
-                    INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount], [CreatedBy], [CreatedDateTime])
-                    SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount, '00000000-0000-0000-0000-000000000000', GETDATE();
-                COMMIT TRANSACTION;
+				BEGIN TRANSACTION;
+					INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount], [CreatedBy], [CreatedDateTime])
+					SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount, '00000000-0000-0000-0000-000000000000', GETDATE();
+				COMMIT TRANSACTION;
 			END
 		END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 9);
+			ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -384,70 +372,700 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[sp_Rent_Insert]
 @AssetId [uniqueidentifier],
 @TenantId [uniqueidentifier],
+@StartDate [date],
 @EndDate [date]
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-		IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[Asset] [Asset]
-			WHERE [Asset].[AssetId] = @AssetId
+		IF EXISTS(SELECT 1
+			FROM [dbo].[Rent] [Rent] 
+			WHERE @StartDate BETWEEN [Rent].[StartDate] AND [Rent].[EndDate] AND @AssetId = [Rent].[AssetId]
 		)
 		BEGIN
-		   RAISERROR( 'There is no such asset to rent', 1, 7) WITH NOWAIT;
+			RAISERROR( 'The room in this dates is taken', 1, 7) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
-		    IF NOT EXISTS(SELECT 1
-			    FROM [dbo].[Tenant] [Tenant]
-				WHERE [Tenant].[TenantId] = @TenantId
-			)
-			BEGIN
-			    RAISERROR( 'There is no such tenant', 1, 7) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-				BEGIN TRANSACTION;
-                    INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate], [CreatedBy], [CreatedDateTime])
-                    SELECT NEWID(), @AssetId, @TenantId, GETDATE(), @EndDate, '00000000-0000-0000-0000-000000000000', GETDATE();
-                COMMIT TRANSACTION;
-			END
-		END
+			DECLARE @RentId [uniqueidentifier] = NEWID();
+			BEGIN TRANSACTION;
+				INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate], [CreatedBy], [CreatedDateTime])
+				SELECT @RentId, @AssetId, @TenantId, @StartDate, @EndDate, '00000000-0000-0000-0000-000000000000', GETDATE();
+			COMMIT TRANSACTION;
+			SELECT @RentId AS [RentId]
+		END		
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
             RAISERROR( @Message , 11, 7);
+			ROLLBACK TRANSACTION;
         END CATCH;
     END;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[sp_Form_Bill]
+@RentId [uniqueidentifier],
+@StartDate [datetime2],
+@EndDate [datetime2]
+AS
+BEGIN
+    DECLARE @TenantId [uniqueidentifier], @AssetId [uniqueidentifier], @DayesToPay [int], @Tax [numeric](18,2), @Fine [numeric](18,2), @Amount [numeric](18,2);
+
+	SELECT @TenantId = [Rent].[TenantId], @AssetId = [Rent].[AssetId] 
+	FROM [dbo].[Rent] [Rent]
+	WHERE [Rent].[RentId] = @RentId;
+
+	SELECT @Tax = [Impost].[Tax], @Fine = [Impost].[Fine], @DayesToPay = [Impost].[PaymentDay]
+	FROM [dbo].[Impost] [Impost]
+	WHERE @StartDate >= [Impost].[StartDate] AND @StartDate <= [Impost].[EndDate]
+	
+	SELECT @Amount = [Room].[Area] * [Price].[Value] * ( DAY(@StartDate) - DAY(EOMONTH(@StartDate))) / DAY(EOMONTH(@StartDate))
+	FROM [dbo].[Room] [Room]
+	LEFT JOIN [dbo].[RoomType] AS [RoomType] ON [RoomType].[RoomTypeId] = [Room].[RoomTypeId]
+	INNER JOIN [dbo].[Price] AS [Price] ON [Price].[RoomTypeId] = [RoomType].[RoomTypeId]
+	RIGHT JOIN [dbo].[Asset] AS [Asset] ON [Asset].[AssetId] = @AssetId
+	WHERE [Asset].[AssetId] = @AssetId AND @StartDate BETWEEN [Price].[StartDate] AND [Price].[EndDate];
+    
+    EXEC [dbo].[sp_Bill_Insert] @TenantId = @TenantId, @AssetId = @AssetId, @Amount = @Amount, @EndDate = NULL, @IssueDate = @EndDate;
+END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Test_Input]
 AS
 BEGIN
-	--Address
+    --Temp tables
+	CREATE TABLE #TempAddressCity
+	([City] [nvarchar](255));
+
+	CREATE TABLE #TempAddressStreet
+	([Street] [nvarchar](255));
+
+	CREATE TABLE #TempAddressBuilding
+	([Building] [nvarchar](255));
+
+	CREATE TABLE #TempAddressId
+    ([AddressId] [uniqueidentifier]);
+
 	CREATE TABLE #TempAddressData
     ([City] [nvarchar](255),
 	[Street] [nvarchar](255),
-	[Building] [nvarchar](255))
+	[Building] [nvarchar](255));
 
-	CREATE TABLE #TempAddressId
-    ([AddressId] [uniqueidentifier])
+	CREATE TABLE #TempFirstName
+	([FirstName] [nvarchar](20));
+
+	CREATE TABLE #TempLastName
+	([LastName] [nvarchar](20));
+
+	CREATE TABLE #TempOwnerId
+	([OwnerId] [uniqueidentifier]);
+
+	CREATE TABLE #TempOwnerData
+    ([Name] [nvarchar](50));
+
+	CREATE TABLE #TempOwner
+	([Name] [nvarchar](50),
+	[AddressId] [uniqueidentifier]);
+
+	CREATE TABLE #TempTenantName
+	([Name] [nvarchar](50));
+
+	CREATE TABLE #TempTenantDirectorName
+	([Director] [nvarchar](50));
+
+	CREATE TABLE #TempTenantBankName
+	([BankName] [nvarchar](50));
+
+	CREATE TABLE #TempTenantDescription
+	([Description] [nvarchar](50));
+
+	CREATE TABLE #TempTenantId
+	([TenantId] [uniqueidentifier])
+
+	CREATE TABLE #TempTenantData
+	([Name] [nvarchar](50),
+	[BankName] [nvarchar](50),
+	[Director] [nvarchar](50),
+	[Description] [nvarchar](255));
+
+	CREATE TABLE #TempTenant
+    ([Name] [nvarchar](50),
+	[BankName] [nvarchar](50),
+	[AddressId] [uniqueidentifier],
+	[Director] [nvarchar](50),
+	[Description] [nvarchar](255));
+
+	CREATE TABLE #TempRoomTypeId
+	([RoomTypeId] [int]);
+
+	CREATE TABLE #TempRoomTypeData
+	([Name] [nvarchar](50));
+
+	CREATE TABLE #TempDate
+	([StartDate] [datetime2],
+	[EndDate] [datetime2],);
+
+	CREATE TABLE #TempPriceValue
+	([Value] [numeric](18,2));
+
+	CREATE TABLE #TempPriceData
+	([StartDate] [datetime2],
+	[Value] [numeric](18,2),
+	[EndDate] [datetime2]);
+
+	CREATE TABLE #TempPrice
+    ([StartDate] [datetime2],
+	[Value] [numeric](18,2),
+	[EndDate] [datetime2],
+	[RoomTypeId] [int]);
+
+	CREATE TABLE #TempRoomId
+	([RoomId] [uniqueidentifier]);
+
+	CREATE TABLE #TempRoomData
+	([Number] [int],
+	[Area] [numeric](18,2));
+
+	CREATE TABLE #TempRoom
+    ([Number] [int],
+	[Area] [numeric](18,2),
+	[RoomTypeId] [int]);
+
+	CREATE TABLE #TempAssetId
+	([AssetId] [uniqueidentifier]);
+
+	CREATE TABLE #TempAsset
+    ([OwnerId] [uniqueidentifier],
+	[RoomId] [uniqueidentifier]);
+
+	CREATE TABLE #TempRentId
+	([RentId] [uniqueidentifier]);
+
+	CREATE TABLE #TempRent
+    ([AssetId] [uniqueidentifier],
+	[TenantId] [uniqueidentifier],
+	[StartDate] [datetime2],
+	[EndDate] [datetime2]);
+
+	CREATE TABLE #TempBillId
+	([BillId] [uniqueidentifier]);
+
+	CREATE TABLE #TempBillData
+	([BillAmount] [numeric](18,2),
+	[IssueDate] [date],
+	[EndDate] [date]);
+
+	CREATE TABLE #TempBill
+    ([BillAmount] [numeric](18,2),
+	[AssetId] [uniqueidentifier],
+	[TenantId] [uniqueidentifier],
+	[IssueDate] [date],
+	[EndDate] [date]);
+
+	CREATE TABLE #TempPaymentData
+	([PaymentDay] [datetime2],
+	[Amount] [numeric](18,2));
+
+	CREATE TABLE #TempPayment
+    ([TenantId] [uniqueidentifier],
+	[BillId] [uniqueidentifier],
+	[PaymentDay] [datetime2],
+	[Amount] [numeric](18,2));
+
+	CREATE TABLE #TempImpostData
+	([Tax] [numeric](18,2),
+	[Fine] [numeric](18,2),
+	[PaymentDay] [int],
+	[StartDay] [datetime2],
+	[EndDay] [datetime2]);
+
+	--Variables
+	DECLARE
+	    @City [nvarchar](255), 
+		@Street [nvarchar](255), 
+		@Building [nvarchar](255),
+		@Name [nvarchar](50), 
+		@AddressId [uniqueidentifier],
+		@BankName [nvarchar](50), 
+		@Director [nvarchar](50), 
+		@Description [nvarchar](255),
+		@Value [numeric](18,2), 
+		@EndDate [datetime2], 
+		@RoomTypeId [int],
+		@Number [int], 
+		@Area [numeric](18,2),
+		@OwnerId [uniqueidentifier], 
+		@RoomId[uniqueidentifier],
+		@AssetId [uniqueidentifier], 
+		@TenantId [uniqueidentifier],
+		@BillAmount [numeric](18,2), 
+		@IssueDate [date],
+		@Tax [numeric](4,2), 
+		@Fine [numeric](3,2), 
+		@PaymentDays[int], 
+		@StartDay [datetime2], 
+		@EndDay [datetime2],
+		@BillId [uniqueidentifier],
+		@PaymentDay [datetime2], 
+		@Amount [numeric](18,2),
+		@AmountOfRoomTypes [int],
+		@StartDate [datetime2];
+
+	--Cursors
+    DECLARE Address_cursor CURSOR
+    FOR SELECT [City], [Street], [Building]
+    FROM #TempAddressData;
+
+	DECLARE Owner_cursor CURSOR
+    FOR SELECT [Name], [AddressId]
+    FROM #TempOwner;
+
+	DECLARE Tenant_cursor CURSOR
+    FOR SELECT [Name], [BankName], [AddressId], [Director], [Description]
+    FROM #TempTenant;
+
+	DECLARE RoomType_cursor CURSOR
+    FOR SELECT [Name]
+    FROM #TempRoomTypeData;
+
+	DECLARE Price_cursor CURSOR
+    FOR SELECT [StartDate], [Value], [EndDate], [RoomTypeId]
+    FROM #TempPrice;
+
+	DECLARE Room_cursor CURSOR
+    FOR SELECT [Number], [Area], [RoomTypeId]
+    FROM #TempRoom;
+
+	DECLARE Asset_cursor CURSOR
+    FOR SELECT [OwnerId], [RoomId]
+    FROM #TempAsset;
+
+	DECLARE Rent_cursor CURSOR
+    FOR SELECT [AssetId], [TenantId], [StartDate], [EndDate]
+    FROM #TempRent;
+
+	DECLARE Bill_cursor CURSOR
+    FOR SELECT [BillAmount], [AssetId], [TenantId], [IssueDate], [EndDate]
+    FROM #TempBill;
+
+	DECLARE Payment_cursor CURSOR
+    FOR SELECT [TenantId], [BillId], [PaymentDay], [Amount]
+    FROM #TempPayment;
+
+	DECLARE Impost_cursor CURSOR
+    FOR SELECT [Tax], [Fine], [PaymentDay], [StartDay], [EndDay]
+    FROM #TempImpostData;
+
+	--Temp table inserts
+	INSERT INTO #TempAddressCity VALUES 
+	('New York'),
+	('Los Angeles'),
+	('Chicago'),
+	('Houston'),
+	('Phoenix'),
+	('Philadelphia'),
+	('San Antonio'),
+	('San Diego'),
+	('Dallas'),
+	('San Jose'),
+	('Austin'),
+	('Jacksonville'),
+	('San Francisco'),
+	('Indianapolis'),
+	('Columbus'),
+	('Fort Worth'),
+	('Charlotte'),
+	('Seattle'),
+	('Denver'),
+	('El Paso'),
+	('Detroit'),
+	('Washington'),
+	('Boston'),
+	('Memphis'),
+	('Nashville'),
+	('Portland'),
+	('Oklahoma City'),
+	('Las Vegas'),
+	('Baltimore'),
+	('Louisville'),
+	('Milwaukee'),
+	('Albuquerque'),
+	('Tucson'),
+	('Fresno'),
+	('Sacramento'),
+	('Kansas City'),
+	('Long Beach'),
+	('Mesa'),
+	('Atlanta'),
+	('Colorado Springs'),
+	('Miami'),
+	('Raleigh'),
+	('Omaha'),
+	('Virginia Beach'),
+	('Oakland'),
+	('Minneapolis'),
+	('Tulsa'),
+	('Wichita'),
+	('Arlington'),
+	('New Orleans');
+
+	INSERT INTO #TempAddressStreet VALUES 
+	('Main Street'),
+	('First Street'),
+	('Second Street'),
+	('Third Street'),
+	('Fourth Street'),
+	('Fifth Avenue'),
+	('Elm Street'),
+	('Maple Avenue'),
+	('Oak Street'),
+	('Park Avenue'),
+	('Washington Street'),
+	('Broadway'),
+	('High Street'),
+	('Market Street'),
+	('Church Street'),
+	('Chestnut Street'),
+	('Pine Street'),
+	('Center Street'),
+	('Spruce Street'),
+	('School Street'),
+	('Bridge Street'),
+	('Water Street'),
+	('North Street'),
+	('South Street'),
+	('West Street'),
+	('East Street'),
+	('Union Street'),
+	('Spring Street'),
+	('Madison Avenue'),
+	('Franklin Street'),
+	('Hill Street'),
+	('Front Street'),
+	('Liberty Street'),
+	('Jackson Street'),
+	('Victoria Street'),
+	('Sunset Boulevard'),
+	('Lake Street'),
+	('Grove Street'),
+	('Mill Street'),
+	('River Road'),
+	('Park Street'),
+	('Lincoln Street'),
+	('Smith Street'),
+	('Grant Avenue'),
+	('Adams Street'),
+	('Pearl Street'),
+	('Jefferson Street'),
+	('State Street'),
+	('Court Street'),
+	('Willow Street');
+
+	INSERT INTO #TempAddressBuilding VALUES 
+	('123'),
+	('456'),
+	('789'),
+	('101'),
+	('202'),
+	('303'),
+	('404'),
+	('505'),
+	('606'),
+	('707'),
+	('808'),
+	('909'),
+	('111'),
+	('222'),
+	('333'),
+	('444'),
+	('555'),
+	('666'),
+	('777'),
+	('888'),
+	('999'),
+	('121'),
+	('232'),
+	('343'),
+	('454'),
+	('565'),
+	('676'),
+	('787'),
+	('898'),
+	('919'),
+	('131'),
+	('242'),
+	('353'),
+	('464'),
+	('575'),
+	('686'),
+	('797'),
+	('808'),
+	('929'),
+	('141'),
+	('252'),
+	('363'),
+	('474'),
+	('585'),
+	('696');
 
 	INSERT INTO #TempAddressData
-	VALUES ('New York', 'Broadway', '123'),
-	('New York', 'Broadway', '124'),
-    ('Los Angeles', 'Hollywood Blvd', '456'),
-    ('London', 'Oxford Street', '789'),
-    ('Paris', 'Champs-Élysées', '1011'),
-    ('Tokyo', 'Shibuya Crossing', '1213')
+	SELECT TOP(20) [AddressCity].[City], [AddressStreet].[Street], [AddressBuilding].[Building]
+	FROM [#TempAddressCity] [AddressCity], [#TempAddressStreet] [AddressStreet], [#TempAddressBuilding] [AddressBuilding]
+	ORDER BY NEWID();
 
-	DECLARE Address_cursor CURSOR
-    FOR SELECT [City], [Street], [Building]
-    FROM #TempAddressData
+	INSERT INTO #TempFirstName VALUES 
+    ('John'),
+	('Jane'),
+	('Michael'),
+	('Emily'),
+	('David'),
+	('Sarah'),
+	('Chris'),
+	('Laura'),
+	('Matthew'),
+	('Jennifer'),
+	('Robert'),
+	('Amanda'),
+	('Daniel'),
+	('Stephanie'),
+	('James'),
+	('Jessica'),
+	('Andrew'),
+	('Elizabeth'),
+	('Brian'),
+	('Megan'),
+	('William'),
+	('Nicole'),
+	('Kevin'),
+	('Samantha'),
+	('Thomas'),
+	('Ashley'),
+	('Ryan'),
+	('Melissa'),
+	('Steven'),
+	('Lauren'),
+	('Joseph'),
+	('Christina'),
+	('Jason'),
+	('Amy'),
+	('Patrick'),
+	('Michelle'),
+	('Timothy'),
+	('Kimberly'),
+	('Richard'),
+	('Rachel'),
+	('Alex'),
+	('Victoria'),
+	('Charles'),
+	('Hannah'),
+	('Peter'),
+	('Olivia'),
+	('Jonathan'),
+	('Sophia'),
+	('Ethan'),
+	('Madison'),
+	('Benjamin'),
+	('Emma'),
+	('Gabriel'),
+	('Grace'),
+	('Samuel'),
+	('Chloe'),
+	('Tyler'),
+	('Lily'),
+	('Nicholas'),
+	('Ava');
 
-	DECLARE @City [nvarchar](255), @Street [nvarchar](255), @Building [nvarchar](255)
+	INSERT INTO #TempLastName VALUES 
+	('Smith'),
+	('Johnson'),
+	('Williams'),
+	('Jones'),
+	('Brown'),
+	('Davis'),
+	('Miller'),
+	('Wilson'),
+	('Moore'),
+	('Taylor'),
+	('Anderson'),
+	('Thomas'),
+	('Jackson'),
+	('White'),
+	('Harris'),
+	('Martin'),
+	('Thompson'),
+	('Garcia'),
+	('Martinez'),
+	('Robinson'),
+	('Clark'),
+	('Rodriguez'),
+	('Lewis'),
+	('Lee'),
+	('Walker'),
+	('Hall'),
+	('Allen'),
+	('Young'),
+	('Hernandez'),
+	('King'),
+	('Wright'),
+	('Lopez'),
+	('Hill'),
+	('Scott'),
+	('Green'),
+	('Adams'),
+	('Baker'),
+	('Gonzalez'),
+	('Nelson'),
+	('Carter');
+
+	INSERT INTO #TempOwnerData
+	SELECT TOP(10) CONCAT ([FirstName].[FirstName], [LastName].[LastName]) AS [Name]
+	FROM [#TempFirstName] [FirstName], [#TempLastName] [LastName]
+	ORDER BY NEWID();
+
+	INSERT INTO #TempTenantName VALUES 
+	('Acme Corporation'),
+	('Widget Industries'),
+	('Global Logistics Inc.'),
+	('Tech Solutions Ltd.'),
+	('Innovative Ventures LLC'),
+	('Pioneer Enterprises'),
+	('Summit Holdings'),
+	('Apex Innovations'),
+	('Prime Systems'),
+	('Dynamic Enterprises'),
+	('Evergreen Group'),
+	('Omega Solutions'),
+	('Silverline Technologies'),
+	('Unified Services'),
+	('Frontier Industries'),
+	('Golden Gate Enterprises'),
+	('Northern Lights Ventures'),
+	('Titanium Solutions'),
+	('Strategic Partners Inc.'),
+	('Bluebird Enterprises'),
+	('Vanguard Holdings'),
+	('Matrix Corporation'),
+	('Phoenix Enterprises'),
+	('Crimson Solutions'),
+	('Arrowhead Ventures'),
+	('Redwood Enterprises'),
+	('Sunrise Technologies'),
+	('Magnolia Group'),
+	('Azure Innovations'),
+	('Pacific Coast Ventures');
+
+	INSERT INTO #TempTenantDirectorName
+	SELECT TOP(10) CONCAT ([FirstName].[FirstName], [LastName].[LastName]) AS [Name]
+	FROM [#TempFirstName] [FirstName], [#TempLastName] [LastName]
+	ORDER BY NEWID();
+
+	INSERT INTO #TempTenantBankName VALUES 
+	('City Bank'),
+	('First National Bank'),
+	('Bank of America'),
+	('Wells Fargo'),
+	('Chase Bank'),
+	('Citibank'),
+	('HSBC Bank'),
+	('TD Bank'),
+	('PNC Bank'),
+	('US Bank'),
+	('Capital One Bank'),
+	('BB&T Bank'),
+	('SunTrust Bank'),
+	('Regions Bank'),
+	('Santander Bank'),
+	('KeyBank'),
+	('Fifth Third Bank'),
+	('M&T Bank'),
+	('Huntington Bank'),
+	('Citizens Bank');
+
+	INSERT INTO #TempTenantDescription VALUES 
+	('Leading provider of IT solutions'),
+	('Innovative technology company driving change'),
+	('Manufacturer of high-quality widgets'),
+	('Global leader in financial services'),
+	('Offering cutting-edge software solutions'),
+	('Providing top-notch customer service'),
+	('Industry pioneer in renewable energy'),
+	('Leader in healthcare services'),
+	('Expert in marketing and advertising'),
+	('Delivering excellence in consulting services'),
+	('Leading the way in sustainable practices'),
+	('Provider of premium security solutions'),
+	('Bringing creativity to design and branding'),
+	('Specializing in real estate development'),
+	('Supplier of industrial equipment'),
+	('Focused on improving education worldwide'),
+	('Manufacturer of consumer electronics'),
+	('Offering comprehensive insurance services'),
+	('Leader in telecommunications'),
+	('Specializing in food and beverage distribution'),
+	('Global player in automotive manufacturing'),
+	('Innovator in pharmaceuticals'),
+	('Leader in hospitality and tourism'),
+	('Expert in financial consulting'),
+	('Provider of legal services'),
+	('Leading the market in entertainment'),
+	('Specializing in aerospace engineering'),
+	('Global leader in fashion retail'),
+	('Innovative leader in biotechnology');
+
+	INSERT TOP(20) INTO #TempTenantData
+	SELECT [TenantName].[Name], [BankName].[BankName], [DirectorName].[Director], [Description].[Description]
+	FROM [#TempTenantName] [TenantName], [#TempTenantDirectorName] [DirectorName], [#TempTenantBankName] [BankName], [#TempTenantDescription] [Description]
+	ORDER BY NEWID();
+
+	INSERT INTO #TempRoomTypeData VALUES 
+	('Single Room'),
+	('Double Room'),
+	('Suite'),
+	('Studio Apartment'),
+	('Deluxe Room'),
+	('Executive Suite'),
+	('Family Room'),
+	('Penthouse Suite'),
+	('Duplex Apartment'),
+	('Villa');
+
+	DECLARE @start [datetime2] = '2022-01-01';
+	DECLARE @end [datetime2] = GETDATE();
+
+	WITH DateCTE AS (
+		SELECT @start AS StartDate, DATEADD(MONTH, 1, @start) AS EndDate
+		UNION ALL
+		SELECT DATEADD(MONTH, 1, StartDate), DATEADD(MONTH, 2, StartDate)
+		FROM DateCTE
+		WHERE DATEADD(MONTH, 1, StartDate) < @end
+	)
+	INSERT INTO #TempDate ([StartDate], [EndDate])
+	SELECT StartDate, DATEADD(DAY, -1, EndDate) AS EndDate
+	FROM DateCTE;
+
+	INSERT INTO #TempPriceValue
+	SELECT TOP 20 CONVERT([numeric](18,2),(ABS(CHECKSUM(NewId())) + 500) % 2000 + 200) AS [Value]
+    FROM
+        [sys].[all_columns];
+
+	INSERT INTO #TempPriceData
+	SELECT [PriceDate].[StartDate], [PriceValue].[Value], [PriceDate].[EndDate]
+	FROM [#TempDate] [PriceDate], [#TempPriceValue] [PriceValue]
+	ORDER BY NEWID();
+
+	INSERT INTO #TempRoomData
+    SELECT TOP 10
+	    CONVERT([int],(ABS(CHECKSUM(NewId()))) % 1000 + 10) AS [Number],
+		CONVERT([numeric](18,2),(ABS(CHECKSUM(NewId()))) % 100 + 50) AS [Area]
+	FROM
+	    [sys].[all_columns];
+
+	INSERT INTO #TempImpostData
+	SELECT CONVERT([numeric](18,2),(ABS(CHECKSUM(NewId()))) % 1 + 0.2) AS [Tax], CONVERT([numeric](18,2),(ABS(CHECKSUM(NewId()))) % 0.1 + 0.02) AS [Fine], CONVERT([int],(ABS(CHECKSUM(NewId()))) % 15 + 1) AS [PaymentDay], [TempDate].[StartDate], [TempDate].[EndDate] 
+	FROM [#TempDate] [TempDate];
+
+	--Address
 	OPEN Address_cursor;
 
 	FETCH NEXT FROM Address_cursor INTO 
@@ -465,35 +1083,11 @@ BEGIN
 	CLOSE Address_cursor;
 
     --Owner
-	CREATE TABLE #TempOwnerId
-	([OwnerId] [uniqueidentifier])
-
-	CREATE TABLE #TempOwnerData
-    ([Name] [nvarchar](50))
-
-	CREATE TABLE #TempOwner
-	([Name] [nvarchar](50),
-	[AddressId] [uniqueidentifier])
-
-	INSERT INTO #TempOwnerData
-	VALUES ('Emily Martinez'),
-	('Benjamin Kim'),
-	('Sophia Nguyen'),
-	('Alexander Patel'),
-	('Olivia Brown');
-
-	DECLARE Owner_cursor CURSOR
-    FOR SELECT [Name], [AddressId]
-    FROM #TempOwner
-
     INSERT INTO #TempOwner
-	SELECT DISTINCT [combine].[Name], [combine].[AddressId]
-	FROM(SELECT [t1].[Name], [t2].[AddressId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
-        FROM #TempOwnerData AS [t1]
-        CROSS JOIN #TempAddressId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0
-   
-	DECLARE @Name [nvarchar](50), @AddressId [uniqueidentifier];
+	SELECT TOP 5 [OwnerData].[Name], [AddressId].[AddressId]
+	FROM [#TempOwnerData] [OwnerData], [#TempAddressId] [AddressId]
+	ORDER BY NEWID();
+
 	OPEN Owner_cursor;
 
 	FETCH NEXT FROM Owner_cursor INTO 
@@ -510,42 +1104,13 @@ BEGIN
 	CLOSE Owner_cursor;
 
 	--Tenant
-	CREATE TABLE #TempTenantId
-	([TenantId] [uniqueidentifier])
-
-	CREATE TABLE #TempTenantData
-	([Name] [nvarchar](50),
-	[BankName] [nvarchar](50),
-	[Director] [nvarchar](50),
-	[Description] [nvarchar](255))
-
-	CREATE TABLE #TempTenant
-    ([Name] [nvarchar](50),
-	[BankName] [nvarchar](50),
-	[AddressId] [uniqueidentifier],
-	[Director] [nvarchar](50),
-	[Description] [nvarchar](255))
-
-	INSERT INTO #TempTenantData
-    VALUES
-    ('Emily Martinez', 'Bank A', 'John Doe', 'Tenant description 1'),
-    ('Benjamin Kim', 'Bank B', 'Jane Smith', 'Tenant description 2'),
-    ('Sophia Nguyen', 'Bank C', 'Michael Johnson', 'Tenant description 3'),
-    ('Alexander Patel', 'Bank D', 'Emma Brown', 'Tenant description 4'),
-    ('Olivia Brown', 'Bank E', 'David Lee', 'Tenant description 5')
-
-	DECLARE Tenant_cursor CURSOR
-    FOR SELECT [Name], [BankName], [AddressId], [Director], [Description]
-    FROM #TempTenant;
-
     INSERT INTO #TempTenant
-	SELECT DISTINCT [combine].[Name], [combine].[BankName], [combine].[AddressId], [combine].[Director], [combine].[Description]
-	FROM(SELECT [t1].[Name], [t1].[BankName], [t1].[Director], [t1].[Description], [t2].[AddressId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
+	SELECT TOP 10 [combine].[Name], [combine].[BankName], [combine].[AddressId], [combine].[Director], [combine].[Description]
+	FROM(SELECT [t1].[Name], [t1].[BankName], [t1].[Director], [t1].[Description], [t2].[AddressId]
         FROM #TempTenantData AS [t1]
         CROSS JOIN #TempAddressId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
+	ORDER BY NEWID();
    
-	DECLARE @BankName [nvarchar](50), @Director [nvarchar](50), @Description [nvarchar](255);
 	OPEN Tenant_cursor;
 
 	FETCH NEXT FROM Tenant_cursor INTO 
@@ -562,23 +1127,6 @@ BEGIN
 	CLOSE Tenant_cursor;
 
 	--RoomType
-	CREATE TABLE #TempRoomTypeId
-	([RoomTypeId] [int])
-
-	CREATE TABLE #TempRoomTypeData
-	([Name] [nvarchar](50))
-
-	INSERT INTO #TempRoomTypeData
-    VALUES ('Room Type A'),
-    ('Room Type B'),
-    ('Room Type C'),
-    ('Room Type D'),
-    ('Room Type E');
-
-	DECLARE RoomType_cursor CURSOR
-    FOR SELECT [Name]
-    FROM #TempRoomTypeData;
-
 	OPEN RoomType_cursor;
 
 	FETCH NEXT FROM RoomType_cursor INTO 
@@ -593,86 +1141,35 @@ BEGIN
 	CLOSE RoomType_cursor;
 
 	--Price
-	CREATE TABLE #TempPriceData
-	([Value] [numeric](18,2),
-	[EndDate] [datetime2])
-
-	CREATE TABLE #TempPrice
-    ([Value] [numeric](18,2),
-	[EndDate] [datetime2],
-	[RoomTypeId] [int])
-
-	INSERT INTO #TempPriceData
-    VALUES
-    (100.50, '2024-03-15 18:30:00'),
-    (75.20, '2024-03-16 17:45:00'),
-    (120.75, '2024-03-17 19:00:00'),
-    (90.80, '2024-03-18 16:20:00'),
-    (105.00, '2024-03-19 20:15:00');
-
     INSERT INTO #TempPrice
-	SELECT [combine].[Value], [combine].[EndDate], [combine].[RoomTypeId]
-	FROM(SELECT [t1].[Value], [t1].[EndDate], [t2].[RoomTypeId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
-        FROM #TempPriceData AS [t1]
-        CROSS JOIN #TempRoomTypeId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
-   
-    DECLARE Price_cursor CURSOR
-    FOR SELECT [Value], [EndDate], [RoomTypeId]
-    FROM #TempPrice;
+	SELECT [combine].[StartDate], [combine].[Value], [combine].[EndDate], [combine].[RoomTypeId]
+	FROM(SELECT [t1].[StartDate], [t1].[Value], [t1].[EndDate], [t2].[RoomTypeId]
+        FROM #TempPriceData AS [t1], #TempRoomTypeId AS [t2]) AS [combine]
 
 	OPEN Price_cursor;
 
-	DECLARE @Value [numeric](18,2), @EndDate [datetime2], @RoomTypeId [int];
-
 	FETCH NEXT FROM Price_cursor INTO 
-    @Value, @EndDate, @RoomTypeId;
+    @StartDate, @Value, @EndDate, @RoomTypeId;
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    EXEC [dbo].[sp_Price_Insert] @Value = @Value, @EndDate = @EndDate, @RoomTypeId = @RoomTypeId
+	    EXEC [dbo].[sp_Price_Insert] @StartDate = @StartDate, @Value = @Value, @EndDate = @EndDate, @RoomTypeId = @RoomTypeId
 
 	    FETCH NEXT FROM Price_cursor INTO 
-        @Value, @EndDate, @RoomTypeId;
+		@StartDate, @Value, @EndDate, @RoomTypeId;
 	END
 
 	CLOSE Price_cursor;
 
 	--Room
-    CREATE TABLE #TempRoomId
-	([RoomId] [uniqueidentifier])
-
-	CREATE TABLE #TempRoomData
-	([Number] [int],
-	[Area] [numeric](18,2))
-
-	CREATE TABLE #TempRoom
-    ([Number] [int],
-	[Area] [numeric](18,2),
-	[RoomTypeId] [int])
-
-	INSERT INTO #TempRoomData
-    VALUES
-    (1, 100.50),
-    (2, 75.25),
-    (3, 120.75),
-    (4, 90.00),
-    (5, 60.80);
-
-	DECLARE Room_cursor CURSOR
-    FOR SELECT [Number], [Area], [RoomTypeId]
-    FROM #TempRoom;
-
     INSERT INTO #TempRoom
-	SELECT DISTINCT [combine].[Number], [combine].[Area], [combine].[RoomTypeId]
-	FROM(SELECT [t1].[Number], [t1].[Area], [t2].[RoomTypeId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
+	SELECT TOP 10 [combine].[Number], [combine].[Area], [combine].[RoomTypeId]
+	FROM(SELECT [t1].[Number], [t1].[Area], [t2].[RoomTypeId]
         FROM #TempRoomData AS [t1]
         CROSS JOIN #TempRoomTypeId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
+	ORDER BY NEWID();
    
 	OPEN Room_cursor;
-
-	DECLARE @Number [int], @Area [numeric](18,2)
 
 	FETCH NEXT FROM Room_cursor INTO 
     @Number, @Area, @RoomTypeId
@@ -688,25 +1185,11 @@ BEGIN
 	CLOSE Room_cursor;
 
 	--Asset
-	CREATE TABLE #TempAssetId
-	([AssetId] [uniqueidentifier])
-
-	CREATE TABLE #TempAsset
-    ([OwnerId] [uniqueidentifier],
-	[RoomId] [uniqueidentifier])
-
-	DECLARE Asset_cursor CURSOR
-    FOR SELECT [OwnerId], [RoomId]
-    FROM #TempAsset;
-
     INSERT INTO #TempAsset
-	SELECT DISTINCT [combine].[OwnerId], [combine].[RoomId]
-	FROM(SELECT [t1].[OwnerId], [t2].[RoomId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
+	SELECT [combine].[OwnerId], [combine].[RoomId]
+	FROM(SELECT [t1].[OwnerId], [t2].[RoomId]
         FROM #TempOwnerId AS [t1]
         CROSS JOIN #TempRoomId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
-   
-    DECLARE @OwnerId [uniqueidentifier], @RoomId[uniqueidentifier];
 
 	OPEN Asset_cursor;
 
@@ -724,81 +1207,55 @@ BEGIN
 	CLOSE Asset_cursor;
 
 	--Rent
-	CREATE TABLE #TempRentId
-	([RentId] [uniqueidentifier]);
-
-	CREATE TABLE #TempRent
-    ([AssetId] [uniqueidentifier],
-	[TenantId] [uniqueidentifier],
-	[EndDate] [date]);
-
-	DECLARE Rent_cursor CURSOR
-    FOR SELECT [AssetId], [TenantId], [EndDate]
-    FROM #TempRent;
-
     INSERT INTO #TempRent
-	SELECT DISTINCT [combine].[AssetId], [combine].[TenantId], DATEADD(MONTH, [combine].[rownum], GETDATE()) AS [EndDate]
-	FROM(SELECT [t1].[AssetId], [t2].[TenantId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
-        FROM #TempAssetId AS [t1]
-        CROSS JOIN #TempTenantId AS [t2]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
-
-	DECLARE @AssetId [uniqueidentifier], @TenantId [uniqueidentifier];
+	SELECT [combine].[AssetId], [combine].[TenantId], [combine].[StartDate], [combine].[EndDate]
+	FROM(SELECT [t1].[AssetId], [t2].[TenantId], [t3].[StartDate], [t3].[EndDate]
+        FROM #TempAssetId AS [t1], #TempTenantId AS [t2], #TempDate AS [t3]) AS [combine]
+	ORDER BY NEWID() DESC;
 
 	OPEN Rent_cursor;
 
 	FETCH NEXT FROM Rent_cursor INTO 
-    @AssetId, @TenantId, @EndDate
+    @AssetId, @TenantId, @StartDate, @EndDate
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempRentId EXEC [dbo].[sp_Rent_Insert] @AssetId = @AssetId, @TenantId = @TenantId, @EndDate = @EndDate;
+	    INSERT INTO #TempRentId EXEC [dbo].[sp_Rent_Insert] @AssetId = @AssetId, @TenantId = @TenantId, @StartDate = @StartDate, @EndDate = @EndDate;
 
 	    FETCH NEXT FROM Rent_cursor INTO 
-        @AssetId, @TenantId, @EndDate
+		@AssetId, @TenantId, @StartDate, @EndDate
 	END
 
 	CLOSE Rent_cursor;
 
 	--Bill
-	CREATE TABLE #TempBillId
-	([BillId] [uniqueidentifier])
+	INSERT INTO #TempBill
+	SELECT [Price].[Value] * [Room].[Area] AS [BillAmount], 
+		[Asset].[AssetId], 
+		[Rent].[TenantId], 
+		[Rent].[EndDate] AS [IssueDate],  
+		CASE
+			WHEN DATEADD(MONTH, 1, [Rent].[EndDate]) < GETDATE() THEN DATEADD(MONTH, 1, [Rent].[EndDate])
+			ELSE NULL
+		END AS [EndDate]
+	FROM [#TempRentId] [TempRentId]
+	LEFT JOIN [dbo].[Rent] AS [Rent] ON [Rent].[RentId] = [TempRentId].[RentId]
+	LEFT JOIN [dbo].[Asset] AS [Asset] ON [Asset].[AssetId] = [Rent].[AssetId]
+	LEFT JOIN [dbo].[Room] AS [Room] ON [Room].[RoomId] = [Asset].[RoomId]
+	LEFT JOIN [dbo].[Price] AS [Price] ON [Price].[RoomTypeId] = [Room].[RoomTypeId]
+	WHERE [Rent].[EndDate] BETWEEN [Price].[StartDate] AND [Price].[EndDate];
+  
+	UPDATE #TempBill
+	SET [BillAmount] = [BillAmount] * [Impost].[Tax] * CASE 
+		WHEN DATEDIFF(day, [IssueDate], DATEADD(MONTH, 1, [IssueDate])) > [Impost].[PaymentDay] THEN POWER(1 + [Impost].[Fine], DATEDIFF(day, [IssueDate], DATEADD(MONTH, 1, [IssueDate])) - [Impost].[PaymentDay]) 
+		ELSE 1 
+		END
+	FROM [dbo].[Impost] [Impost]
+	WHERE [IssueDate] BETWEEN [Impost].[StartDate] AND [Impost].[EndDate];
 
-	CREATE TABLE #TempBillData
-	([BillAmount] [numeric](18,2),
-	[IssueDate] [date],
-	[EndDate] [date])
 
-	CREATE TABLE #TempBill
-    ([BillAmount] [numeric](18,2),
-	[AssetId] [uniqueidentifier],
-	[TenantId] [uniqueidentifier],
-	[IssueDate] [date],
-	[EndDate] [date]);
 
-	INSERT INTO #TempBillData
-    VALUES
-    (100.50, '2024-02-14', NULL),
-    (75.25, '2023-02-15', '2023-08-15'),
-    (120.75, '2024-02-16', NULL),
-    (90.00, '2020-02-17', NULL),
-    (60.80, '2023-02-18', NULL);
-
-	DECLARE Bill_cursor CURSOR
-    FOR SELECT [BillAmount], [AssetId], [TenantId], [IssueDate], [EndDate]
-    FROM #TempBill;
-
-    INSERT INTO #TempBill
-	SELECT DISTINCT [combine].[BillAmount], [combine].[AssetId], [combine].[TenantId], [combine].[IssueDate], [combine].[EndDate]
-	FROM(SELECT [t1].[BillAmount], [t1].[IssueDate], [t1].[EndDate], [t2].[AssetId], [t3].[TenantId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
-        FROM #TempBillData AS [t1]
-        CROSS JOIN #TempAssetId AS [t2]
-		CROSS JOIN #TempTenantId AS [t3]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
-   
 	OPEN Bill_cursor;
-
-	DECLARE @BillAmount [numeric](18,2), @IssueDate [date];
 
 	FETCH NEXT FROM Bill_cursor INTO 
     @BillAmount, @AssetId, @TenantId, @IssueDate, @EndDate;
@@ -814,37 +1271,12 @@ BEGIN
 	CLOSE Bill_cursor;
 
 	--Payment
-	CREATE TABLE #TempPaymentData
-	([PaymentDay] [datetime2],
-	[Amount] [numeric](18,2));
-
-	CREATE TABLE #TempPayment
-    ([TenantId] [uniqueidentifier],
-	[BillId] [uniqueidentifier],
-	[PaymentDay] [datetime2],
-	[Amount] [numeric](18,2));
-
-	INSERT INTO #TempPaymentData ([PaymentDay], [Amount])
-    VALUES
-    ('2023-02-14 10:00:00', 100.50),
-    ('2023-04-15 11:30:00', 75.25),
-    ('2023-05-16 12:45:00', 120.75),
-    ('2023-06-17 09:15:00', 90.00),
-    ('2023-07-18 14:20:00', 60.80);
-
-	DECLARE Payment_cursor CURSOR
-    FOR SELECT [TenantId], [BillId], [PaymentDay], [Amount]
-    FROM #TempPayment;
-
     INSERT INTO #TempPayment
-	SELECT DISTINCT [combine].[TenantId], [combine].[BillId], [combine].[PaymentDay], [combine].[Amount]
-	FROM(SELECT [t1].[PaymentDay], [t1].Amount, [t2].[TenantId], [t3].[BillId], ROW_NUMBER() OVER (ORDER BY NEWID()) AS [rownum]
-        FROM #TempPaymentData AS [t1]
-        CROSS JOIN #TempTenantId AS [t2]
-		CROSS JOIN #TempBillId AS [t3]) AS [combine]
-	WHERE [combine].[rownum] % 5 = 0;
-   
-    DECLARE @BillId [uniqueidentifier], @PaymentDay [datetime2], @Amount [numeric](18,2)
+	SELECT [combine].[TenantId], [combine].[BillId], [combine].[PaymentDay], [combine].[Amount]
+	FROM(SELECT [t2].[TenantId], [t1].[BillId], [t2].[EndDate] AS [PaymentDay], [t2].[BillAmount] AS [Amount]
+        FROM #TempBillId AS [t1]
+		LEFT JOIN [dbo].[Bill] AS [t2] ON [t2].[BillId] = [t1].[BillId]) AS [combine]
+	ORDER BY NEWID();
 
 	OPEN Payment_cursor;
 
@@ -862,27 +1294,6 @@ BEGIN
 	CLOSE Payment_cursor;
 
 	--Impost
-	CREATE TABLE #TempImpostData
-	([Tax] [numeric](18,2),
-	[Fine] [numeric](18,2),
-	[PaymentDay] [int],
-	[StartDay] [datetime2],
-	[EndDay] [datetime2]);
-
-	INSERT INTO #TempImpostData
-    VALUES
-    (00.50, 0.01, 11, '2024-02-14 00:00:00', NULL),
-    (00.25, 0.05, 12, '2024-01-15 00:00:00', '2024-02-13 00:00:00'),
-    (00.10, 0.02, 13, '2023-03-16 00:00:00', '2024-01-14 00:00:00'),
-    (00.30, 0.05, 14, '2022-03-17 00:00:00', '2023-03-15 00:00:00'),
-    (00.50, 0.01, 15, '2024-01-18 00:00:00', '2022-03-16 00:00:00');
-
-	DECLARE Impost_cursor CURSOR
-    FOR SELECT [Tax], [Fine], [PaymentDay], [StartDay], [EndDay]
-    FROM #TempImpostData;
-    
-	DECLARE @Tax [numeric](4,2), @Fine [numeric](3,2), @PaymentDays[int], @StartDay [datetime2], @EndDay [datetime2];
-
 	OPEN Impost_cursor;
 
 	FETCH NEXT FROM Impost_cursor INTO 
@@ -897,5 +1308,5 @@ BEGIN
 	END
 
 	CLOSE Impost_cursor;
-END
+END;
 GO
