@@ -21,19 +21,15 @@ BEGIN
 	    END
 		ELSE
         BEGIN
-		    DECLARE @AddressId [uniqueidentifier] = NEWID();
-			BEGIN TRANSACTION;
-			    INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building], [CreatedBy], [CreatedDateTime])
-                SELECT @AddressId, @City, @Street, @Building, '00000000-0000-0000-0000-000000000000', GETDATE();
-            COMMIT TRANSACTION; 
-			SELECT @AddressId AS [AddressId]
-	    END
+		        DECLARE @AddressId [uniqueidentifier] = NEWID();
+			      INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building])
+            SELECT @AddressId, @City, @Street, @Building;
+			      SELECT @AddressId AS [AddressId]
+	      END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-            RAISERROR( @Message , 11, 0);
-            ROLLBACK TRANSACTION;
+        DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+        RAISERROR( @Message , 11, 0);
     END CATCH;
 END;
 GO
@@ -46,17 +42,13 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
 	    DECLARE @OwnerId [uniqueidentifier] = NEWID();
-        BEGIN TRANSACTION;
-            INSERT INTO [dbo].[Owner] ([OwnerId], [Name], [AddressId], [CreatedBy], [CreatedDateTime])
-            SELECT @OwnerId, @Name, @AddressId, '00000000-0000-0000-0000-000000000000', GETDATE();
-        COMMIT TRANSACTION;
+        INSERT INTO [dbo].[Owner] ([OwnerId], [Name], [AddressId])
+		SELECT @OwnerId, @Name, @AddressId;
 		SELECT @OwnerId AS [OwnerId]
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-            RAISERROR( @Message , 11, 4);
-			ROLLBACK TRANSACTION;
+        DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+        RAISERROR( @Message , 11, 4);
     END CATCH;
 END;
 GO
@@ -72,17 +64,13 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
 		DECLARE @TenantId [uniqueidentifier] = NEWID();
-        BEGIN TRANSACTION;
-            INSERT INTO [dbo].[Tenant] ([TenantId], [Name], [BankName], [AddressId], [Director], [Description], [CreatedBy], [CreatedDateTime])
-            SELECT @TenantId, @Name, @BankName, @AddressId, @Director, @Description, '00000000-0000-0000-0000-000000000000', GETDATE();
-        COMMIT TRANSACTION;
+        INSERT INTO [dbo].[Tenant] ([TenantId], [Name], [BankName], [AddressId], [Director], [Description])
+		SELECT @TenantId, @Name, @BankName, @AddressId, @Director, @Description;
 		SELECT @TenantId AS [TenantId]
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-            RAISERROR( @Message , 11, 10);
-			ROLLBACK TRANSACTION;
+        DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+        RAISERROR( @Message , 11, 10);
     END CATCH;
 END;
 GO
@@ -109,18 +97,14 @@ BEGIN
 		BEGIN
 			SELECT @RoomTypeId = COUNT(*) + 1
 			FROM [dbo].[RoomType] [RoomType];
-		    BEGIN TRANSACTION;
-                INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name], [CreatedBy], [CreatedDateTime])
-                SELECT @RoomTypeId, @Name, '00000000-0000-0000-0000-000000000000', GETDATE();
-            COMMIT TRANSACTION; 
+            INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name])
+            SELECT @RoomTypeId, @Name;
 			SELECT @RoomTypeId AS [RoomTypeId];
 		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 9);
-			ROLLBACK TRANSACTION;
+        DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 9);
     END CATCH;
 END;
 GO
@@ -134,28 +118,25 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-	    IF EXISTS( SELECT 1
-	        FROM [dbo].[Price] [Price]
-			WHERE (@StartDate BETWEEN [Price].[StartDate] AND [Price].[EndDate] 
-			    OR @EndDate BETWEEN [Price].[StartDate] AND [Price].[EndDate])
-				AND [Price].[RoomTypeId] = @RoomTypeId
+		IF NOT EXISTS(SELECT 1
+		    FROM [dbo].[RoomType] [RoomType]
+			WHERE [RoomType].[RoomTypeId] = @RoomTypeId
 		)
 		BEGIN
 		    RAISERROR( 'There is already price in this period for given room type' , 1, 6) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
-			BEGIN TRANSACTION;
-                INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId], [CreatedBy], [CreatedDateTime])
-                SELECT NEWID(), @StartDate, @Value, @EndDate, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
-            COMMIT TRANSACTION;
+			  BEGIN TRANSACTION;
+				    INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId], [CreatedBy], [CreatedDateTime])
+				    SELECT NEWID(), GETDATE(), @Value, @EndDate, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
+			  COMMIT TRANSACTION;
 		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 6);
-			ROLLBACK TRANSACTION;
+        DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 6);
+		ROLLBACK TRANSACTION;
     END CATCH;
 END;
 GO
@@ -169,7 +150,6 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
 	    DECLARE @RoomId [uniqueidentifier];
-
 		IF EXISTS(
 			SELECT 1
 			FROM [dbo].[Room] [Room]
@@ -194,19 +174,15 @@ BEGIN
 			ELSE
 			BEGIN
 			    SELECT @RoomId = NEWID();
-                BEGIN TRANSACTION;
-                    INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId], [CreatedBy], [CreatedDateTime])
-                    SELECT @RoomId, @Number, @Area, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
-                COMMIT TRANSACTION; 
+                INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId])
+                SELECT @RoomId, @Number, @Area, @RoomTypeId;
                 SELECT @RoomId AS [RoomId];
 			END
 		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 8);
-			ROLLBACK TRANSACTION;
+		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 8);
     END CATCH;
 END;
 GO
@@ -227,19 +203,25 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			DECLARE @AssetId [uniqueidentifier] = NEWID();
-			BEGIN TRANSACTION;
-                INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId], [CreatedBy], [CreatedDateTime])
-                SELECT @AssetId, @OwnerId, @RoomId, '00000000-0000-0000-0000-000000000000', GETDATE();
-            COMMIT TRANSACTION;    
+		    IF NOT EXISTS(SELECT 1
+		        FROM [dbo].[Owner] [Owner]
+			    WHERE [Owner].[OwnerId] = @OwnerId
+		    )
+			  BEGIN
+			      RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
+			  END
+			  ELSE
+			  BEGIN
+			      DECLARE @AssetId [uniqueidentifier] = NEWID();
+            INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId])
+            SELECT @AssetId, @OwnerId, @RoomId;
             SELECT @AssetId AS [AssetId]
-		END
+			  END
+		    END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 1);
-			ROLLBACK TRANSACTION;
+		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 1);
     END CATCH;
 END;
 GO
@@ -273,19 +255,15 @@ BEGIN
 			ELSE
 			BEGIN
 			    DECLARE @BillId [uniqueidentifier] = NEWID();
-                BEGIN TRANSACTION;
-                    INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate], [CreatedBy], [CreatedDateTime])
-                    SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate, '00000000-0000-0000-0000-000000000000', GETDATE();
-                COMMIT TRANSACTION;
+                INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate])
+                SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate;
 				SELECT @BillId AS [BillId];
 			END
 		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 2);
-			ROLLBACK TRANSACTION;
+		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 2);
     END CATCH;
 END;
 GO
@@ -313,8 +291,8 @@ BEGIN
 		ELSE
 		BEGIN
 		    BEGIN TRANSACTION;
-                INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate], [CreatedBy], [CreatedDateTime])
-                SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay, '00000000-0000-0000-0000-000000000000', GETDATE()
+                INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate])
+                SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay;
             COMMIT TRANSACTION;
 		END
     END TRY
@@ -353,18 +331,14 @@ BEGIN
 			END
 			ELSE
 			BEGIN
-				BEGIN TRANSACTION;
-					INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount], [CreatedBy], [CreatedDateTime])
-					SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount, '00000000-0000-0000-0000-000000000000', GETDATE();
-				COMMIT TRANSACTION;
+          INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount])
+          SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount;
 			END
 		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 9);
-			ROLLBACK TRANSACTION;
+		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 9);
     END CATCH;
 END;
 GO
@@ -387,21 +361,25 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			DECLARE @RentId [uniqueidentifier] = NEWID();
-			BEGIN TRANSACTION;
-				INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate], [CreatedBy], [CreatedDateTime])
-				SELECT @RentId, @AssetId, @TenantId, @StartDate, @EndDate, '00000000-0000-0000-0000-000000000000', GETDATE();
-			COMMIT TRANSACTION;
-			SELECT @RentId AS [RentId]
-		END		
+		    IF NOT EXISTS(SELECT 1
+			    FROM [dbo].[Tenant] [Tenant]
+				WHERE [Tenant].[TenantId] = @TenantId
+			)
+			BEGIN
+			    RAISERROR( 'There is no such tenant', 1, 7) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+                INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate])
+                SELECT NEWID(), @AssetId, @TenantId, GETDATE(), @EndDate;
+			END
+		END
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 7);
-			ROLLBACK TRANSACTION;
-        END CATCH;
-    END;
+		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+        RAISERROR( @Message , 11, 7);
+    END CATCH;
+END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Form_Bill]
@@ -448,7 +426,7 @@ BEGIN
 
 	CREATE TABLE #TempAddressId
     ([AddressId] [uniqueidentifier]);
-
+    
 	CREATE TABLE #TempAddressData
     ([City] [nvarchar](255),
 	[Street] [nvarchar](255),
