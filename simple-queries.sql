@@ -256,30 +256,27 @@ SELECT [Address].[AddressId], [Address].[Building], [Address].[ModifiedBy], [Add
 FROM [dbo].[Address] [Address];
 GO
 
-CREATE OR ALTER PROCEDURE [dbo].[sp_Change_Namber_Of_All_Rooms_Of_The_Specific_Owner] @OwnerName [nvarchar](50), @OwnerAddress [uniqueidentifier]
+CREATE OR ALTER PROCEDURE [dbo].[sp_Change_Namber_Of_All_Rooms_Of_The_Specific_Owner] @OwnerId [Uniqueidentifier]
 AS
 BEGIN	
 	UPDATE [dbo].[Room]
-	SET [Number] = ROUND(((1000 - 100 - 1) * RAND() + 100), 0), [ModifiedBy] = '00000000-0000-0000-0000-000000000001', [ModifiedDateTime] = GETDATE()
+	SET [Number] = ROUND(((1000 - 100 - 1) * RAND() + 100), 0)
 	FROM [dbo].[Room] [Room]
 	RIGHT JOIN [dbo].[Asset] AS [Asset] ON [Asset].[RoomId] = [Room].[RoomId]
-	LEFT JOIN [dbo].[Owner] AS [Owner] ON [Owner].[OwnerId] = [Asset].[OwnerId]
-	WHERE [Owner].[AddressId] = @OwnerAddress AND [Owner].[Name] = @OwnerName;
+	WHERE [Asset].[OwnerId] = @OwnerId;
 END;
 GO
 
-DECLARE @OwnerName [nvarchar](50), @AddressId [uniqueidentifier], @RoomTypeId [int];
+DECLARE @OwnerId [uniqueidentifier], @AddressId [uniqueidentifier], @RoomTypeId [int];
 
-SELECT @AddressId = [Owner].[AddressId], @OwnerName = [Owner].[Name]
-FROM [dbo].[Room] [Room]
-RIGHT JOIN [dbo].[Asset] AS [Asset] ON [Asset].[RoomId] = [Room].[RoomId]
-LEFT JOIN [dbo].[Owner] AS [Owner] ON [Owner].[OwnerId] = [Asset].[OwnerId]
-ORDER BY NEWID();
+SELECT TOP 1 @OwnerId = [Owner].[OwnerId]
+FROM [dbo].[Owner] [Owner]
+WHERE [Owner].[Name] = 'Alexander Patel'
 
 SELECT [Room].[Number], [Room].[ModifiedBy], [Room].[ModifiedDateTime]
 FROM [dbo].[Room] [Room];
 
-EXEC [dbo].[sp_Change_Namber_Of_All_Rooms_Of_The_Specific_Owner] @OwnerName = @OwnerName, @OwnerAddress = @AddressId;
+EXEC [dbo].[sp_Change_Namber_Of_All_Rooms_Of_The_Specific_Owner] @OwnerId = @OwnerId;
 
 SELECT [Room].[Number], [Room].[ModifiedBy], [Room].[ModifiedDateTime]
 FROM [dbo].[Room] [Room];
