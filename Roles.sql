@@ -8,6 +8,21 @@ TO [Tenant_Role];
 GO
 
 GRANT SELECT
+ON OBJECT::[Room]
+TO [Tenant_Role];
+GO
+
+GRANT SELECT
+ON OBJECT::[Accommodation]
+TO [Tenant_Role];
+GO
+
+GRANT SELECT
+ON OBJECT::[AccommodationRoom]
+TO [Tenant_Role];
+GO
+
+GRANT SELECT
 ON OBJECT::[Bill]
 TO [Tenant_Role];
 GO
@@ -26,6 +41,21 @@ ON OBJECT::[Asset]
 TO [Owner_Role];
 GO
 
+GRANT SELECT, INSERT, UPDATE
+ON OBJECT::[Room]
+TO [Tenant_Role];
+GO
+
+GRANT SELECT, INSERT, UPDATE
+ON OBJECT::[Accommodation]
+TO [Tenant_Role];
+GO
+
+GRANT SELECT, INSERT, UPDATE
+ON OBJECT::[AccommodationRoom]
+TO [Tenant_Role];
+GO
+
 GRANT SELECT, INSERT, UPDATE, DELETE
 ON OBJECT::[Bill]
 TO [Owner_Role];
@@ -42,5 +72,10 @@ GO
 
 GRANT SELECT, INSERT, UPDATE, DELETE
 ON OBJECT::[RoomType]
+TO [Administrator_Role];
+GO
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::[Accommodation]
 TO [Administrator_Role];
 GO
