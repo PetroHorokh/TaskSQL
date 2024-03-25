@@ -382,6 +382,63 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE [dbo].[sp_Accommodation_Insert]
+@Name [nvarchar](255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+		IF EXISTS(SELECT 1
+			FROM [dbo].[Accommodation] [Accommodation] 
+			WHERE [Accommodation].[Name] = @Name
+		)
+		BEGIN
+			RAISERROR( 'Such accommotation exists', 1, 7) WITH NOWAIT;
+		END
+		ELSE
+		BEGIN
+			DECLARE @AccommodationId [int];
+			SELECT @AccommodationId = COUNT(*) + 1
+			FROM [dbo].[RoomType] [RoomType];
+			BEGIN TRANSACTION;
+				INSERT INTO [dbo].[Accommodation] ([AccommodationId], [Name])
+				SELECT @AccommodationId, @Name;
+			COMMIT TRANSACTION;
+			SELECT @AccommodationId AS [AccommodationId];
+		END
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+            RAISERROR( @Message , 11, 12);
+			ROLLBACK TRANSACTION;
+        END CATCH;
+    END;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[sp_AccommodationRoom_Insert]
+@AccommodationId [int],
+@RoomId [uniqueidentifier]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+		DECLARE @AccommodationRoomId [uniqueidentifier] = NEWID();
+		BEGIN TRANSACTION;
+		    INSERT INTO [dbo].[AccommodationRoom] ([AccommodationRoomId], [AccommodationId],[RoomId])
+			SELECT @AccommodationRoomId, @AccommodationId, @RoomId;
+		COMMIT TRANSACTION;
+		SELECT @AccommodationRoomId AS [AccommodationRoomId];
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+            RAISERROR( @Message , 11, 13);
+			ROLLBACK TRANSACTION;
+        END CATCH;
+    END;
+GO
+
 CREATE OR ALTER PROCEDURE [dbo].[sp_Form_Bill]
 @RentId [uniqueidentifier],
 @StartDate [datetime2],
