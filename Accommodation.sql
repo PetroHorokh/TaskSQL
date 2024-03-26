@@ -1,10 +1,10 @@
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accommodation' and xtype='U')
 CREATE TABLE [dbo].[Accommodation](
-	[AccommodationId] [int] IDENTITY(0,1) NOT NULL,
+	[AccommodationId] [int] NOT NULL,
 	[Name] [nvarchar](255) NOT NULL,
-    [CreatedBy] [nvarchar](50) DEFAULT CURRENT_USER NOT NULL,
+    [CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
     [CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
-    [ModifiedBy] [nvarchar](50) DEFAULT CURRENT_USER NOT NULL,
+    [ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
     [ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
 	CONSTRAINT [PK_Accommodation] PRIMARY KEY ([AccommodationId])
 );
@@ -15,9 +15,9 @@ CREATE TABLE [dbo].[AccommodationRoom](
 	[AccommodationRoomId] [uniqueidentifier] NOT NULL,
 	[AccommodationId] [int] NOT NULL,
 	[RoomId] [uniqueidentifier] NOT NULL,
-    [CreatedBy] [nvarchar](50) DEFAULT CURRENT_USER NOT NULL,
+    [CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
     [CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
-    [ModifiedBy] [nvarchar](50) DEFAULT CURRENT_USER NOT NULL,
+    [ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
     [ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
 	CONSTRAINT [PK_AccommodationRoom] PRIMARY KEY ([AccommodationRoomId])
 );
