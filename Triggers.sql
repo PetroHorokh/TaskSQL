@@ -183,7 +183,7 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Tenant]([TenantId],[Name],[BankName],[AddressId],[Director],[Description],[CreatedBy],[CreatedDateTime])
-			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), GETDATE()  AS [CreatedDateTime]
+			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
 			FROM inserted i;
 		COMMIT TRANSACTION;
 	END TRY
@@ -426,8 +426,17 @@ BEGIN
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Tenant]
 			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
-			WHERE [TenantId] = (SELECT [TenantId] FROM inserted)
-
+			WHERE [TenantId] = (SELECT [TenantId] FROM inserted);
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+            RAISERROR( @Message , 11, 0);
+            ROLLBACK TRANSACTION;
+    END CATCH;
+END;
+GO
 CREATE OR ALTER TRIGGER [dbo].[tr_Accommodation_Update]
 ON [dbo].[Accommodation]
 AFTER UPDATE
