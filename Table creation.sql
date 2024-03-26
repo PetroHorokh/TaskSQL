@@ -18,8 +18,8 @@ CREATE TABLE [dbo].[RoomType](
     [Name] [nvarchar](20)  NOT NULL,
     [CreatedBy] [uniqueidentifier] NOT NULL,
     [CreatedDateTime] [datetime2] NOT NULL,
-    [ModifiedBy] [uniqueidentifier] NULL,
-    [ModifiedDateTime] [datetime2] NULL,
+    [ModifiedBy] [uniqueidentifier] NOT NULL,
+    [ModifiedDateTime] [datetime2] NOT NULL,
     CONSTRAINT [PK_RoomType] PRIMARY KEY ([RoomTypeId])
 )
 GO

@@ -183,8 +183,52 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Tenant]([TenantId],[Name],[BankName],[AddressId],[Director],[Description],[CreatedBy],[CreatedDateTime])
-			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted;
+			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), GETDATE()  AS [CreatedDateTime]
+			FROM inserted i;
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+            RAISERROR( @Message , 11, 0);
+            ROLLBACK TRANSACTION;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER TRIGGER [dbo].[tr_Accommodation_Insert]
+ON [dbo].[Accommodation]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+	BEGIN TRY;
+	    BEGIN TRANSACTION;
+			INSERT INTO [dbo].[Accommodation]([AccommodationId],[Name],[CreatedBy],[CreatedDateTime])
+			SELECT [AccommodationId], [Name], i.[CreatedBy], GETDATE() AS [CreatedDateTime]
+			FROM inserted i;
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+            RAISERROR( @Message , 11, 0);
+            ROLLBACK TRANSACTION;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER TRIGGER [dbo].[tr_AccommodationRoom_Insert]
+ON [dbo].[AccommodationRoom]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+	BEGIN TRY;
+	    BEGIN TRANSACTION;
+			INSERT INTO [dbo].[AccommodationRoom]([AccommodationRoomId],[AccommodationId],[RoomId],[CreatedBy],[CreatedDateTime])
+			SELECT [AccommodationRoomId], [AccommodationId], [RoomId], i.[CreatedBy], GETDATE() AS [CreatedDateTime]
+			FROM inserted i;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -383,6 +427,40 @@ BEGIN
 			UPDATE [dbo].[Tenant]
 			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
 			WHERE [TenantId] = (SELECT [TenantId] FROM inserted)
+
+CREATE OR ALTER TRIGGER [dbo].[tr_Accommodation_Update]
+ON [dbo].[Accommodation]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+	BEGIN TRY;
+	  BEGIN TRANSACTION;
+			UPDATE [dbo].[Accommodation]
+      SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AccommodationId] = (SELECT [AccommodationId] FROM inserted)
+		COMMIT TRANSACTION;
+	END TRY
+	BEGIN CATCH
+        IF @@TRANCOUNT > 0
+			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
+            RAISERROR( @Message , 11, 0);
+            ROLLBACK TRANSACTION;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER TRIGGER [dbo].[tr_AccommodationRoom_Update]
+ON [dbo].[AccommodationRoom]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+	BEGIN TRY;
+	    BEGIN TRANSACTION;
+			UPDATE [dbo].[AccommodationRoom]
+      SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AccommodationRoomId] = (SELECT [AccommodationRoomId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
