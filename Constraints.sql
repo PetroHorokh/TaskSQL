@@ -5,7 +5,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Address]
-	ADD CONSTRAINT [DF_Address_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Address_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -27,7 +27,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Asset]
-	ADD CONSTRAINT [DF_Asset_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Asset_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -49,7 +49,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Bill]
-	ADD CONSTRAINT [DF_Bill_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Bill_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -71,7 +71,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Impost]
-	ADD CONSTRAINT [DF_Impost_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Impost_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -93,7 +93,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Owner]
-	ADD CONSTRAINT [DF_Owner_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Owner_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -115,7 +115,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Payment]
-	ADD CONSTRAINT [DF_Payment_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Payment_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -137,7 +137,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Price]
-	ADD CONSTRAINT [DF_Price_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Price_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -159,7 +159,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Rent]
-	ADD CONSTRAINT [DF_Rent_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Rent_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -181,7 +181,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Room]
-	ADD CONSTRAINT [DF_Room_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Room_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -203,7 +203,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[RoomType]
-	ADD CONSTRAINT [DF_RoomType_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_RoomType_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -225,7 +225,7 @@ IF NOT EXISTS (
 )
 BEGIN
 	ALTER TABLE [dbo].[Tenant]
-	ADD CONSTRAINT [DF_Tenant_CreatedBy] DEFAULT CURRENT_USER FOR [CreatedBy];
+	ADD CONSTRAINT [DF_Tenant_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
 END;
 GO
 
@@ -243,11 +243,55 @@ GO
 IF NOT EXISTS (
     SELECT 1
     FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_Accommodation_CreatedBy'
+)
+BEGIN
+	ALTER TABLE [dbo].[Accommodation]
+	ADD CONSTRAINT [DF_Accommodation_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_Accommodation_CreatedDateTime'
+)
+BEGIN
+	ALTER TABLE [dbo].[Accommodation]
+	ADD CONSTRAINT [DF_Accommodation_CreatedDateTime] DEFAULT GETDATE() FOR [CreatedDateTime];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_AccommodationRoom_CreatedBy'
+)
+BEGIN
+	ALTER TABLE [dbo].[AccommodationRoom]
+	ADD CONSTRAINT [DF_AccommodationRoom_CreatedBy] DEFAULT '00000000-0000-0000-0000-000000000000' FOR [CreatedBy];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_AccommodationRoom_CreatedDateTime'
+)
+BEGIN
+	ALTER TABLE [dbo].[AccommodationRoom]
+	ADD CONSTRAINT [DF_AccommodationRoom_CreatedDateTime] DEFAULT GETDATE() FOR [CreatedDateTime];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
     WHERE [name]  = 'DF_Address_ModifiedBy'
 )
 BEGIN
     ALTER TABLE [dbo].[Address]
-	ADD CONSTRAINT [DF_Address_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Address_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -269,7 +313,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Asset]
-	ADD CONSTRAINT [DF_Asset_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Asset_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -291,7 +335,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Bill]
-	ADD CONSTRAINT [DF_Bill_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Bill_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -313,7 +357,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Impost]
-	ADD CONSTRAINT [DF_Impost_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Impost_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -335,7 +379,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Owner]
-	ADD CONSTRAINT [DF_Owner_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Owner_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -357,7 +401,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Payment]
-	ADD CONSTRAINT [DF_Payment_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Payment_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -379,7 +423,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Price]
-	ADD CONSTRAINT [DF_Price_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Price_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -401,7 +445,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Rent]
-	ADD CONSTRAINT [DF_Rent_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Rent_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -423,7 +467,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Room]
-	ADD CONSTRAINT [DF_Room_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Room_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -445,7 +489,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[RoomType]
-	ADD CONSTRAINT [DF_RoomType_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_RoomType_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -467,7 +511,7 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE [dbo].[Tenant]
-	ADD CONSTRAINT [DF_Tenant_ModifiedBy] DEFAULT CURRENT_USER FOR [ModifiedBy];
+	ADD CONSTRAINT [DF_Tenant_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
 END;
 GO
 
@@ -479,5 +523,49 @@ IF NOT EXISTS (
 BEGIN
 	ALTER TABLE [dbo].[Tenant]
 	ADD CONSTRAINT [DF_Tenant_ModifiedDateTime] DEFAULT GETDATE() FOR [ModifiedDateTime];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_Accommodation_ModifiedBy'
+)
+BEGIN
+    ALTER TABLE [dbo].[Accommodation]
+	ADD CONSTRAINT [DF_Accommodation_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_Accommodation_ModifiedDateTime'
+)
+BEGIN
+	ALTER TABLE [dbo].[Accommodation]
+	ADD CONSTRAINT [DF_Accommodation_ModifiedDateTime] DEFAULT GETDATE() FOR [ModifiedDateTime];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_AccommodationRoom_ModifiedBy'
+)
+BEGIN
+    ALTER TABLE [dbo].[AccommodationRoom]
+	ADD CONSTRAINT [DF_AccommodationRoom_ModifiedBy] DEFAULT '00000000-0000-0000-0000-000000000001' FOR [ModifiedBy];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM [sys].[default_constraints]
+    WHERE [name]  = 'DF_AccommodationRoom_ModifiedDateTime'
+)
+BEGIN
+	ALTER TABLE [dbo].[AccommodationRoom]
+	ADD CONSTRAINT [DF_AccommodationRoom_ModifiedDateTime] DEFAULT GETDATE() FOR [ModifiedDateTime];
 END;
 GO
