@@ -1,7 +1,8 @@
 CREATE OR ALTER PROCEDURE [dbo].[sp_Address_Insert]
 @City [nvarchar](255),
 @Street [nvarchar](255),
-@Building [nvarchar](255)
+@Building [nvarchar](255),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -21,10 +22,24 @@ BEGIN
 	    END
 		ELSE
         BEGIN
-		        DECLARE @AddressId [uniqueidentifier] = NEWID();
-			      INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building])
-            SELECT @AddressId, @City, @Street, @Building;
-			      SELECT @AddressId AS [AddressId]
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 0) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					DECLARE @AddressId [uniqueidentifier] = NEWID();
+					INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building], [CreatedBy])
+					SELECT @AddressId, @City, @Street, @Building, @CreatedBy;
+
+					SELECT @AddressId AS [AddressId]
+				END
 	      END
     END TRY
     BEGIN CATCH
@@ -36,15 +51,29 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Owner_Insert]
 @AddressId [uniqueidentifier],
-@Name [nvarchar](50)
+@Name [nvarchar](50),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-	    DECLARE @OwnerId [uniqueidentifier] = NEWID();
-        INSERT INTO [dbo].[Owner] ([OwnerId], [Name], [AddressId])
-		SELECT @OwnerId, @Name, @AddressId;
-		SELECT @OwnerId AS [OwnerId]
+		DECLARE @CreatedBy [uniqueidentifier];
+
+		SELECT TOP 1 @CreatedBy = [User].[UserId]
+		FROM [dbo].[User] [User]
+		WHERE [User].[Name] = @UserName;
+
+		IF @CreatedBy = NULL
+		BEGIN
+			RAISERROR( 'There is no such user' , 1, 4) WITH NOWAIT;
+		END
+		ELSE
+		BEGIN
+			DECLARE @OwnerId [uniqueidentifier] = NEWID();
+			INSERT INTO [dbo].[Owner] ([OwnerId], [Name], [AddressId], [CreatedBy])
+			SELECT @OwnerId, @Name, @AddressId, @CreatedBy;
+			SELECT @OwnerId AS [OwnerId]
+		END
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
@@ -58,15 +87,29 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Tenant_Insert]
 @Name [nvarchar](50),
 @BankName [nvarchar](50),
 @Director [nvarchar](50),
-@Description [nvarchar](255)
+@Description [nvarchar](255),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-		DECLARE @TenantId [uniqueidentifier] = NEWID();
-        INSERT INTO [dbo].[Tenant] ([TenantId], [Name], [BankName], [AddressId], [Director], [Description])
-		SELECT @TenantId, @Name, @BankName, @AddressId, @Director, @Description;
-		SELECT @TenantId AS [TenantId]
+		DECLARE @CreatedBy [uniqueidentifier];
+
+		SELECT TOP 1 @CreatedBy = [User].[UserId]
+		FROM [dbo].[User] [User]
+		WHERE [User].[Name] = @UserName;
+
+		IF @CreatedBy = NULL
+		BEGIN
+			RAISERROR( 'There is no such user' , 1, 10) WITH NOWAIT;
+		END
+		ELSE
+		BEGIN
+			DECLARE @TenantId [uniqueidentifier] = NEWID();
+			INSERT INTO [dbo].[Tenant] ([TenantId], [Name], [BankName], [AddressId], [Director], [Description], [CreatedBy])
+			SELECT @TenantId, @Name, @BankName, @AddressId, @Director, @Description, @CreatedBy;
+			SELECT @TenantId AS [TenantId]
+		END
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
@@ -76,7 +119,8 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_RoomType_Insert]
-@Name [nvarchar](20)
+@Name [nvarchar](20),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -95,11 +139,24 @@ BEGIN
         END
 		ELSE
 		BEGIN
-			SELECT @RoomTypeId = COUNT(*) + 1
-			FROM [dbo].[RoomType] [RoomType];
-            INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name])
-            SELECT @RoomTypeId, @Name;
-			SELECT @RoomTypeId AS [RoomTypeId];
+			DECLARE @CreatedBy [uniqueidentifier];
+
+			SELECT TOP 1 @CreatedBy = [User].[UserId]
+			FROM [dbo].[User] [User]
+			WHERE [User].[Name] = @UserName;
+
+			IF @CreatedBy = NULL
+			BEGIN
+				RAISERROR( 'There is no such user' , 1, 9) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+				SELECT @RoomTypeId = COUNT(*) + 1
+				FROM [dbo].[RoomType] [RoomType];
+				INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name], [CreatedBy])
+				SELECT @RoomTypeId, @Name, @CreatedBy;
+				SELECT @RoomTypeId AS [RoomTypeId];
+			END
 		END
     END TRY
     BEGIN CATCH
@@ -113,7 +170,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Price_Insert]
 @StartDate [datetime2],
 @Value [numeric](18,2),
 @EndDate [datetime2],
-@RoomTypeId [int]
+@RoomTypeId [int],
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -127,10 +185,23 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-			  BEGIN TRANSACTION;
+			DECLARE @CreatedBy [uniqueidentifier];
+
+			SELECT TOP 1 @CreatedBy = [User].[UserId]
+			FROM [dbo].[User] [User]
+			WHERE [User].[Name] = @UserName;
+
+			IF @CreatedBy = NULL
+			BEGIN
+				RAISERROR( 'There is no such user' , 1, 6) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+				BEGIN TRANSACTION;
 				    INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId], [CreatedBy], [CreatedDateTime])
-				    SELECT NEWID(), GETDATE(), @Value, @EndDate, @RoomTypeId, '00000000-0000-0000-0000-000000000000', GETDATE();
-			  COMMIT TRANSACTION;
+				    SELECT NEWID(), GETDATE(), @Value, @EndDate, @RoomTypeId, @CreatedBy, GETDATE();
+				COMMIT TRANSACTION;
+			END
 		END
     END TRY
     BEGIN CATCH
@@ -144,7 +215,8 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[sp_Room_Insert]
 @Number [int],
 @Area [numeric](18,2),
-@RoomTypeId [nvarchar](20)
+@RoomTypeId [nvarchar](20),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -173,15 +245,28 @@ BEGIN
 			END
 			ELSE
 			BEGIN
-			    SELECT @RoomId = NEWID();
-                INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId])
-                SELECT @RoomId, @Number, @Area, @RoomTypeId;
-                SELECT @RoomId AS [RoomId];
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 8) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					SELECT @RoomId = NEWID();
+					INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId], [CreatedBy])
+					SELECT @RoomId, @Number, @Area, @RoomTypeId, @CreatedBy;
+					SELECT @RoomId AS [RoomId];
+				END
 			END
 		END
     END TRY
     BEGIN CATCH
-		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
+		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
         RAISERROR( @Message , 11, 8);
     END CATCH;
 END;
@@ -189,13 +274,14 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Asset_Insert]
 @OwnerId [uniqueidentifier],
-@RoomId [uniqueidentifier]
+@RoomId [uniqueidentifier],
+@UserName [nvarchar](50)
 AS
 BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
+	SET NOCOUNT ON;
+	BEGIN TRY
 		IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[Owner] [Owner]
+			FROM [dbo].[Owner] [Owner]
 		    WHERE [Owner].[OwnerId] = @OwnerId
 	    )
 		BEGIN
@@ -203,21 +289,34 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-		    IF NOT EXISTS(SELECT 1
-		        FROM [dbo].[Owner] [Owner]
-			    WHERE [Owner].[OwnerId] = @OwnerId
+			IF NOT EXISTS(SELECT 1
+				FROM [dbo].[Owner] [Owner]
+				WHERE [Owner].[OwnerId] = @OwnerId
 		    )
-			  BEGIN
-			      RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
-			  END
-			  ELSE
-			  BEGIN
-			      DECLARE @AssetId [uniqueidentifier] = NEWID();
-            INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId])
-            SELECT @AssetId, @OwnerId, @RoomId;
-            SELECT @AssetId AS [AssetId]
-			  END
-		    END
+			BEGIN
+				RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 1) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					DECLARE @AssetId [uniqueidentifier] = NEWID();
+					INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId], [CreatedBy])
+					SELECT @AssetId, @OwnerId, @RoomId, @CreatedBy;
+					SELECT @AssetId AS [AssetId]
+				END
+			END
+		END
     END TRY
     BEGIN CATCH
 		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
@@ -231,7 +330,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Bill_Insert]
 @AssetId [uniqueidentifier],
 @Amount [numeric](18,2),
 @EndDate [date],
-@IssueDate [date]
+@IssueDate [date],
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -254,10 +354,23 @@ BEGIN
 			END
 			ELSE
 			BEGIN
-			    DECLARE @BillId [uniqueidentifier] = NEWID();
-                INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate])
-                SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate;
-				SELECT @BillId AS [BillId];
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 2) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					DECLARE @BillId [uniqueidentifier] = NEWID();
+					INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate], [CreatedBy])
+					SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate, @CreatedBy;
+					SELECT @BillId AS [BillId];
+				END
 			END
 		END
     END TRY
@@ -273,7 +386,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Impost_Insert]
 @Fine [decimal](3,2),
 @PaymentDay [int],
 @StartDay [datetime2],
-@EndDay [datetime2]
+@EndDay [datetime2],
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -290,10 +404,24 @@ BEGIN
 		END
 		ELSE
 		BEGIN
-		    BEGIN TRANSACTION;
-                INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate])
-                SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay;
-            COMMIT TRANSACTION;
+			DECLARE @CreatedBy [uniqueidentifier];
+
+			SELECT TOP 1 @CreatedBy = [User].[UserId]
+			FROM [dbo].[User] [User]
+			WHERE [User].[Name] = @UserName;
+
+			IF @CreatedBy = NULL
+			BEGIN
+				RAISERROR( 'There is no such user' , 1, 2) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+				BEGIN TRANSACTION;
+					INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate])
+					SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay;
+				COMMIT TRANSACTION;
+			END
+		    
 		END
     END TRY
     BEGIN CATCH
@@ -309,7 +437,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Payment_Insert]
 @TenantId [uniqueidentifier],
 @BillId [uniqueidentifier],
 @PaymentDay [datetime2],
-@Amount [numeric](18,2)
+@Amount [numeric](18,2),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -331,8 +460,21 @@ BEGIN
 			END
 			ELSE
 			BEGIN
-          INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount])
-          SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount;
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 2) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount], [CreatedBy])
+					SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount, @CreatedBy;
+				END
 			END
 		END
     END TRY
@@ -347,7 +489,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Rent_Insert]
 @AssetId [uniqueidentifier],
 @TenantId [uniqueidentifier],
 @StartDate [date],
-@EndDate [date]
+@EndDate [date],
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -370,8 +513,21 @@ BEGIN
 			END
 			ELSE
 			BEGIN
-                INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate])
-                SELECT NEWID(), @AssetId, @TenantId, GETDATE(), @EndDate;
+				DECLARE @CreatedBy [uniqueidentifier];
+
+				SELECT TOP 1 @CreatedBy = [User].[UserId]
+				FROM [dbo].[User] [User]
+				WHERE [User].[Name] = @UserName;
+
+				IF @CreatedBy = NULL
+				BEGIN
+					RAISERROR( 'There is no such user' , 1, 7) WITH NOWAIT;
+				END
+				ELSE
+				BEGIN
+					INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate], [CreatedBy])
+					SELECT NEWID(), @AssetId, @TenantId, @StartDate, @EndDate, @CreatedBy;
+				END
 			END
 		END
     END TRY
@@ -383,7 +539,8 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Accommodation_Insert]
-@Name [nvarchar](255)
+@Name [nvarchar](255),
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -393,18 +550,31 @@ BEGIN
 			WHERE [Accommodation].[Name] = @Name
 		)
 		BEGIN
-			RAISERROR( 'Such accommotation exists', 1, 7) WITH NOWAIT;
+			RAISERROR( 'Such accommotation exists', 1, 12) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
-			DECLARE @AccommodationId [int];
-			SELECT @AccommodationId = COUNT(*) + 1
-			FROM [dbo].[RoomType] [RoomType];
-			BEGIN TRANSACTION;
-				INSERT INTO [dbo].[Accommodation] ([AccommodationId], [Name])
-				SELECT @AccommodationId, @Name;
-			COMMIT TRANSACTION;
-			SELECT @AccommodationId AS [AccommodationId];
+			DECLARE @CreatedBy [uniqueidentifier];
+
+			SELECT TOP 1 @CreatedBy = [User].[UserId]
+			FROM [dbo].[User] [User]
+			WHERE [User].[Name] = @UserName;
+
+			IF @CreatedBy = NULL
+			BEGIN
+				RAISERROR( 'There is no such user' , 1, 12) WITH NOWAIT;
+			END
+			ELSE
+			BEGIN
+				DECLARE @AccommodationId [int];
+				SELECT @AccommodationId = COUNT(*) + 1
+				FROM [dbo].[RoomType] [RoomType];
+				BEGIN TRANSACTION;
+					INSERT INTO [dbo].[Accommodation] ([AccommodationId], [Name], [CreatedBy])
+					SELECT @AccommodationId, @Name, @CreatedBy;
+				COMMIT TRANSACTION;
+				SELECT @AccommodationId AS [AccommodationId];
+			END
 		END
     END TRY
     BEGIN CATCH
@@ -418,17 +588,31 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_AccommodationRoom_Insert]
 @AccommodationId [int],
-@RoomId [uniqueidentifier]
+@RoomId [uniqueidentifier],
+@UserName [nvarchar](50)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-		DECLARE @AccommodationRoomId [uniqueidentifier] = NEWID();
-		BEGIN TRANSACTION;
-		    INSERT INTO [dbo].[AccommodationRoom] ([AccommodationRoomId], [AccommodationId],[RoomId])
-			SELECT @AccommodationRoomId, @AccommodationId, @RoomId;
-		COMMIT TRANSACTION;
-		SELECT @AccommodationRoomId AS [AccommodationRoomId];
+		DECLARE @CreatedBy [uniqueidentifier];
+
+		SELECT TOP 1 @CreatedBy = [User].[UserId]
+		FROM [dbo].[User] [User]
+		WHERE [User].[Name] = @UserName;
+
+		IF @CreatedBy = NULL
+		BEGIN
+			RAISERROR( 'There is no such user' , 1, 13) WITH NOWAIT;
+		END
+		ELSE
+		BEGIN
+			DECLARE @AccommodationRoomId [uniqueidentifier] = NEWID();
+			BEGIN TRANSACTION;
+				INSERT INTO [dbo].[AccommodationRoom] ([AccommodationRoomId], [AccommodationId], [RoomId], [CreatedBy])
+				SELECT @AccommodationRoomId, @AccommodationId, @RoomId, @CreatedBy;
+			COMMIT TRANSACTION;
+			SELECT @AccommodationRoomId AS [AccommodationRoomId];
+		END
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
@@ -437,34 +621,6 @@ BEGIN
 			ROLLBACK TRANSACTION;
         END CATCH;
     END;
-GO
-
-CREATE OR ALTER PROCEDURE [dbo].[sp_Form_Bill]
-@RentId [uniqueidentifier],
-@StartDate [datetime2],
-@EndDate [datetime2]
-AS
-BEGIN
-	SET NOCOUNT ON;
-    DECLARE @TenantId [uniqueidentifier], @AssetId [uniqueidentifier], @DayesToPay [int], @Tax [numeric](18,2), @Fine [numeric](18,2), @Amount [numeric](18,2);
-
-	SELECT @TenantId = [Rent].[TenantId], @AssetId = [Rent].[AssetId] 
-	FROM [dbo].[Rent] [Rent]
-	WHERE [Rent].[RentId] = @RentId;
-
-	SELECT @Tax = [Impost].[Tax], @Fine = [Impost].[Fine], @DayesToPay = [Impost].[PaymentDay]
-	FROM [dbo].[Impost] [Impost]
-	WHERE @StartDate >= [Impost].[StartDate] AND @StartDate <= [Impost].[EndDate]
-	
-	SELECT @Amount = [Room].[Area] * [Price].[Value] * ( DAY(@StartDate) - DAY(EOMONTH(@StartDate))) / DAY(EOMONTH(@StartDate))
-	FROM [dbo].[Room] [Room]
-	LEFT JOIN [dbo].[RoomType] AS [RoomType] ON [RoomType].[RoomTypeId] = [Room].[RoomTypeId]
-	INNER JOIN [dbo].[Price] AS [Price] ON [Price].[RoomTypeId] = [RoomType].[RoomTypeId]
-	RIGHT JOIN [dbo].[Asset] AS [Asset] ON [Asset].[AssetId] = @AssetId
-	WHERE [Asset].[AssetId] = @AssetId AND @StartDate BETWEEN [Price].[StartDate] AND [Price].[EndDate];
-    
-    EXEC [dbo].[sp_Bill_Insert] @TenantId = @TenantId, @AssetId = @AssetId, @Amount = @Amount, @EndDate = NULL, @IssueDate = @EndDate;
-END;
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_Test_Input]
@@ -647,7 +803,8 @@ BEGIN
 		@PaymentDay [datetime2], 
 		@Amount [numeric](18,2),
 		@AmountOfRoomTypes [int],
-		@StartDate [datetime2];
+		@StartDate [datetime2],
+		@UserName [nvarchar](50) = 'test_user';
 
 	--Cursors
     DECLARE Address_cursor CURSOR
@@ -693,6 +850,11 @@ BEGIN
 	DECLARE Impost_cursor CURSOR
     FOR SELECT [Tax], [Fine], [PaymentDay], [StartDay], [EndDay]
     FROM #TempImpostData;
+
+	--User table insert
+	IF NOT EXISTS(SELECT 1 FROM [dbo].[User] WHERE [Name] = 'test_user')
+	INSERT INTO [dbo].[User]([UserId],[Name])
+	SELECT NEWID(), @UserName
 
 	--Temp table inserts
 	INSERT INTO #TempAddressCity VALUES 
@@ -1111,7 +1273,7 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 	   
-	    INSERT INTO #TempAddressId EXEC [dbo].[sp_Address_Insert] @City = @City, @Street = @Street, @Building = @Building
+	    INSERT INTO #TempAddressId EXEC [dbo].[sp_Address_Insert] @City = @City, @Street = @Street, @Building = @Building, @UserName = 'test_user'
 
 	    FETCH NEXT FROM Address_cursor INTO 
         @City, @Street, @Building
@@ -1132,7 +1294,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempOwnerId EXEC [dbo].[sp_Owner_Insert] @Name = @Name, @AddressId = @AddressId
+	    INSERT INTO #TempOwnerId EXEC [dbo].[sp_Owner_Insert] @Name = @Name, @AddressId = @AddressId, @UserName = 'test_user'
 
 	    FETCH NEXT FROM Owner_cursor INTO 
         @Name, @AddressId
@@ -1155,7 +1317,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempTenantId EXEC [dbo].[sp_Tenant_Insert] @AddressId = @AddressId, @Name = @Name, @BankName = @BankName, @Director = @Director, @Description = @Description;
+	    INSERT INTO #TempTenantId EXEC [dbo].[sp_Tenant_Insert] @AddressId = @AddressId, @Name = @Name, @BankName = @BankName, @Director = @Director, @Description = @Description, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Tenant_cursor INTO 
     @Name, @BankName, @AddressId, @Director, @Description;
@@ -1171,7 +1333,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempRoomTypeId EXEC [dbo].[sp_RoomType_Insert] @Name = @Name;
+	    INSERT INTO #TempRoomTypeId EXEC [dbo].[sp_RoomType_Insert] @Name = @Name, @UserName = 'test_user';
 	    FETCH NEXT FROM RoomType_cursor INTO 
         @Name;
 	END
@@ -1190,7 +1352,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    EXEC [dbo].[sp_Price_Insert] @StartDate = @StartDate, @Value = @Value, @EndDate = @EndDate, @RoomTypeId = @RoomTypeId
+	    EXEC [dbo].[sp_Price_Insert] @StartDate = @StartDate, @Value = @Value, @EndDate = @EndDate, @RoomTypeId = @RoomTypeId, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Price_cursor INTO 
 		@StartDate, @Value, @EndDate, @RoomTypeId;
@@ -1213,7 +1375,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempRoomId EXEC [dbo].[sp_Room_Insert] @Number = @Number, @Area = @Area, @RoomTypeId = @RoomTypeId;
+	    INSERT INTO #TempRoomId EXEC [dbo].[sp_Room_Insert] @Number = @Number, @Area = @Area, @RoomTypeId = @RoomTypeId, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Room_cursor INTO 
         @Number, @Area, @RoomTypeId
@@ -1235,7 +1397,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempAssetId EXEC [dbo].[sp_Asset_Insert] @OwnerId = @OwnerId, @RoomId = @RoomId;
+	    INSERT INTO #TempAssetId EXEC [dbo].[sp_Asset_Insert] @OwnerId = @OwnerId, @RoomId = @RoomId, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Asset_cursor INTO 
         @OwnerId, @RoomId
@@ -1257,7 +1419,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempRentId EXEC [dbo].[sp_Rent_Insert] @AssetId = @AssetId, @TenantId = @TenantId, @StartDate = @StartDate, @EndDate = @EndDate;
+	    INSERT INTO #TempRentId EXEC [dbo].[sp_Rent_Insert] @AssetId = @AssetId, @TenantId = @TenantId, @StartDate = @StartDate, @EndDate = @EndDate, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Rent_cursor INTO 
 		@AssetId, @TenantId, @StartDate, @EndDate
@@ -1299,7 +1461,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempBillId EXEC [dbo].[sp_Bill_Insert] @Amount = @BillAmount, @IssueDate = @IssueDate, @EndDate = @EndDate, @AssetId = @AssetId, @TenantId = @TenantId;
+	    INSERT INTO #TempBillId EXEC [dbo].[sp_Bill_Insert] @Amount = @BillAmount, @IssueDate = @IssueDate, @EndDate = @EndDate, @AssetId = @AssetId, @TenantId = @TenantId, @UserName = 'test_user';
 
 	   FETCH NEXT FROM Bill_cursor INTO 
        @BillAmount, @AssetId, @TenantId, @IssueDate, @EndDate;
@@ -1322,7 +1484,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    EXEC [dbo].[sp_Payment_Insert] @TenantId = @TenantId, @BillId = @BillId, @PaymentDay = @PaymentDay, @Amount = @Amount;
+	    EXEC [dbo].[sp_Payment_Insert] @TenantId = @TenantId, @BillId = @BillId, @PaymentDay = @PaymentDay, @Amount = @Amount, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Payment_cursor INTO 
         @TenantId, @BillId, @PaymentDay, @Amount;
@@ -1338,7 +1500,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    EXEC [dbo].[sp_Impost_Insert] @Tax = @Tax, @Fine = @Fine, @PaymentDay = @PaymentDays, @StartDay = @StartDay, @EndDay = @EndDay;
+	    EXEC [dbo].[sp_Impost_Insert] @Tax = @Tax, @Fine = @Fine, @PaymentDay = @PaymentDays, @StartDay = @StartDay, @EndDay = @EndDay, @UserName = 'test_user';
 
 	    FETCH NEXT FROM Impost_cursor INTO 
         @Tax, @Fine, @PaymentDays, @StartDay, @EndDay;
