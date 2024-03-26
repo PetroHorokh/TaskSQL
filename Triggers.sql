@@ -7,7 +7,7 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Address]([AddressId],[City],[Street],[Building],[CreatedBy],[CreatedDateTime])
-			SELECT i.[AddressId], i.[City], i.[Street], i.[Building], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
+			SELECT i.[AddressId], i.[City], i.[Street], i.[Building], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
 			FROM inserted i;
 		COMMIT TRANSACTION;
 	END TRY
@@ -29,8 +29,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Asset]([AssetId],[OwnerId],[RoomId],[CreatedBy],[CreatedDateTime])
-			SELECT [AssetId], [OwnerId], [RoomId], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [AssetId], [OwnerId], [RoomId], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -51,8 +51,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Bill]([BillId],[TenantId],[AssetId],[BillAmount],[IssueDate],[EndDate],[CreatedBy],[CreatedDateTime])
-			SELECT [BillId],[TenantId],[AssetId],[BillAmount],[IssueDate],[EndDate], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [BillId],[TenantId],[AssetId],[BillAmount],[IssueDate],[EndDate], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -73,8 +73,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Owner]([OwnerId],[Name],[AddressId],[CreatedBy],[CreatedDateTime])
-			SELECT [OwnerId],[Name],[AddressId], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [OwnerId],[Name],[AddressId], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -95,8 +95,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Payment]([PaymentId],[TenantId],[BillId],[PaymentDay],[Amount],[CreatedBy],[CreatedDateTime])
-			SELECT [PaymentId],[TenantId],[BillId],[PaymentDay],[Amount], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [PaymentId],[TenantId],[BillId],[PaymentDay],[Amount], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -117,8 +117,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Rent]([RentId],[AssetId],[TenantId],[StartDate],[EndDate],[CreatedBy],[CreatedDateTime])
-			SELECT [RentId],[AssetId],[TenantId],[StartDate],[EndDate], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [RentId],[AssetId],[TenantId],[StartDate],[EndDate], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -139,8 +139,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Room]([RoomId],[Number],[Area],[RoomTypeId],[CreatedBy],[CreatedDateTime])
-			SELECT [RoomId],[Number],[Area],[RoomTypeId], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [RoomId],[Number],[Area],[RoomTypeId], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -161,8 +161,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[RoomType]([RoomTypeId],[Name],[CreatedBy],[CreatedDateTime])
-			SELECT [RoomTypeId],[Name], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
-			FROM inserted i;
+			SELECT [RoomTypeId],[Name], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) AS [CreatedBy], GETDATE()  AS [CreatedDateTime]
+			FROM inserted;
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -183,7 +183,7 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			INSERT INTO [dbo].[Tenant]([TenantId],[Name],[BankName],[AddressId],[Director],[Description],[CreatedBy],[CreatedDateTime])
-			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], i.[CreatedBy], GETDATE()  AS [CreatedDateTime]
+			SELECT [TenantId],[Name],[BankName],[AddressId],[Director],[Description], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), GETDATE()  AS [CreatedDateTime]
 			FROM inserted i;
 		COMMIT TRANSACTION;
 	END TRY
@@ -249,10 +249,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Address]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Address] [Address]
-			RIGHT JOIN inserted AS i ON i.[AddressId] = [Address].[AddressId]
-			WHERE [Address].[AddressId] = i.[AddressId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AddressId] = (SELECT [AddressId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -273,10 +271,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Asset]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Asset] [Asset]
-			RIGHT JOIN inserted AS i ON i.[AssetId] = [Asset].[AssetId]
-			WHERE [Asset].[AssetId] = i.[AssetId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AssetId] = (SELECT [AssetId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -297,10 +293,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Bill]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Bill] [Bill]
-			RIGHT JOIN inserted AS i ON i.[BillId] = [Bill].[BillId]
-			WHERE [Bill].[BillId] = i.[BillId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [BillId] = (SELECT [BillId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -321,10 +315,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Owner]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Owner] [Owner]
-			RIGHT JOIN inserted AS i ON i.[OwnerId] = [Owner].[OwnerId]
-			WHERE [Owner].[OwnerId] = i.[OwnerId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [OwnerId] = (SELECT [OwnerId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -345,10 +337,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Payment]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Payment] [Payment]
-			RIGHT JOIN inserted AS i ON i.[PaymentId] = [Payment].[PaymentId]
-			WHERE [Payment].[PaymentId] = i.[PaymentId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [PaymentId] = (SELECT [PaymentId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -369,10 +359,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Rent]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Rent] [Rent]
-			RIGHT JOIN inserted AS i ON i.[RentId] = [Rent].[RentId]
-			WHERE [Rent].[RentId] = i.[RentId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [RentId] = (SELECT [RentId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -393,10 +381,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Room]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Room] [Room]
-			RIGHT JOIN inserted AS i ON i.[RoomId] = [Room].[RoomId]
-			WHERE [Room].[RoomId] = i.[RoomId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [RoomId] = (SELECT [RoomId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -417,10 +403,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[RoomType]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[RoomType] [RoomType]
-			RIGHT JOIN inserted AS i ON i.[RoomTypeId] = [RoomType].[RoomTypeId]
-			WHERE [RoomType].[RoomTypeId] = i.[RoomTypeId]
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [RoomTypeId] = (SELECT [RoomTypeId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -441,20 +425,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[Tenant]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Tenant] [Tenant]
-			RIGHT JOIN inserted AS i ON i.[TenantId] = [Tenant].[TenantId]
-			WHERE [Tenant].[TenantId] = i.[TenantId]
-		COMMIT TRANSACTION;
-	END TRY
-	BEGIN CATCH
-        IF @@TRANCOUNT > 0
-			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-            RAISERROR( @Message , 11, 0);
-            ROLLBACK TRANSACTION;
-    END CATCH;
-END;
-GO
+			SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [TenantId] = (SELECT [TenantId] FROM inserted)
 
 CREATE OR ALTER TRIGGER [dbo].[tr_Accommodation_Update]
 ON [dbo].[Accommodation]
@@ -463,12 +435,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
 	BEGIN TRY;
-	    BEGIN TRANSACTION;
+	  BEGIN TRANSACTION;
 			UPDATE [dbo].[Accommodation]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[Accommodation] [Accommodation]
-			RIGHT JOIN inserted AS i ON i.[AccommodationId] = [Accommodation].[AccommodationId]
-			WHERE [Accommodation].[AccommodationId] = i.[AccommodationId]
+      SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AccommodationId] = (SELECT [AccommodationId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -489,10 +459,8 @@ BEGIN
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
 			UPDATE [dbo].[AccommodationRoom]
-			SET [ModifiedBy] = i.ModifiedBy, [ModifiedDateTime] = GETDATE()
-			FROM [dbo].[AccommodationRoom] [AccommodationRoom]
-			RIGHT JOIN inserted AS i ON i.[AccommodationRoomId] = [AccommodationRoom].[AccommodationRoomId]
-			WHERE [AccommodationRoom].[AccommodationRoomId] = i.[AccommodationRoomId]
+      SET [ModifiedBy] = CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), [ModifiedDateTime] = GETDATE()
+			WHERE [AccommodationRoomId] = (SELECT [AccommodationRoomId] FROM inserted)
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
