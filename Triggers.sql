@@ -226,8 +226,8 @@ BEGIN
     SET NOCOUNT ON;
 	BEGIN TRY;
 	    BEGIN TRANSACTION;
-			INSERT INTO [dbo].[AccommodationRoom]([AccommodationRoomId],[AccommodationId],[RoomId],[CreatedBy],[CreatedDateTime])
-			SELECT [AccommodationRoomId], [AccommodationId], [RoomId], i.[CreatedBy], GETDATE() AS [CreatedDateTime]
+			INSERT INTO [dbo].[AccommodationRoom]([AccommodationRoomId],[AccommodationId],[RoomId], [Quantity],[CreatedBy],[CreatedDateTime])
+			SELECT [AccommodationRoomId], [AccommodationId], [RoomId], i.[Quantity], CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())), GETDATE() AS [CreatedDateTime]
 			FROM inserted i;
 		COMMIT TRANSACTION;
 	END TRY

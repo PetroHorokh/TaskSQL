@@ -12,25 +12,16 @@ BEGIN
                 AND [Address].[Street] = @Street
                 AND [Address].[Building] = @Building)
 		BEGIN
-		    SELECT [Address].[AddressId]
-		    FROM [dbo].[Address] [Address]
-		    WHERE [Address].[City] = @City
-                AND [Address].[Street] = @Street
-                AND [Address].[Building] = @Building
-            RAISERROR( 'There is aleady such address' , 1, 0) WITH NOWAIT;
-	    END
-		ELSE
-        BEGIN
-			DECLARE @AddressId [uniqueidentifier] = NEWID();
-			INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building])
-			SELECT @AddressId, @City, @Street, @Building;
-
-			SELECT @AddressId AS [AddressId]
-	      END
+            RAISERROR( 'There is aleady such address' , 11, 3) WITH NOWAIT;
+	    END;
+		DECLARE @AddressId [uniqueidentifier] = NEWID();
+		INSERT INTO [dbo].[Address] ([AddressId], [City], [Street], [Building])
+		SELECT @AddressId, @City, @Street, @Building;
+		SELECT @AddressId AS [AddressId]
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-        RAISERROR( @Message , 11, 0);
+        RAISERROR( @Message , 11, 3);
     END CATCH;
 END;
 GO
@@ -42,6 +33,13 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[Address]
+			WHERE [AddressId] = @AddressId
+		)
+		BEGIN
+			RAISERROR('There is no such address' ,11 ,7);
+		END;
 		DECLARE @OwnerId [uniqueidentifier] = NEWID();
 		INSERT INTO [dbo].[Owner] ([OwnerId], [Name], [AddressId])
 		SELECT @OwnerId, @Name, @AddressId;
@@ -49,7 +47,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-        RAISERROR( @Message , 11, 4);
+        RAISERROR( @Message , 11, 7);
     END CATCH;
 END;
 GO
@@ -64,14 +62,21 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
+		IF NOT EXISTS(SELECT 1 
+			FROM [dbo].[Address] [Address]
+			WHERE [Address].[AddressId] = @AddressId)
+		BEGIN
+			RAISERROR('There is no such address', 11, 13);
+		END;
+
 		DECLARE @TenantId [uniqueidentifier] = NEWID();
 		INSERT INTO [dbo].[Tenant] ([TenantId], [Name], [BankName], [AddressId], [Director], [Description])
 		SELECT @TenantId, @Name, @BankName, @AddressId, @Director, @Description;
-		SELECT @TenantId AS [TenantId]
+		SELECT @TenantId AS [TenantId];
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-        RAISERROR( @Message , 11, 10);
+        RAISERROR( @Message , 11, 13);
     END CATCH;
 END;
 GO
@@ -88,24 +93,18 @@ BEGIN
 		    FROM [dbo].[RoomType] [RoomType]
 			WHERE [RoomType].[Name] = @Name)
         BEGIN
-		    SELECT @RoomTypeId = [RoomType].[RoomTypeId]
-		    FROM [dbo].[RoomType] [RoomType]
-			WHERE [RoomType].[Name] = @Name;
-            RAISERROR( 'There already is such room type' , 1, 9) WITH NOWAIT;
-			SELECT @RoomTypeId AS [RoomTypeId];
-        END
-		ELSE
-		BEGIN
-			SELECT @RoomTypeId = COUNT(*) + 1
-			FROM [dbo].[RoomType] [RoomType];
-			INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name])
-			SELECT @RoomTypeId, @Name;
-			SELECT @RoomTypeId AS [RoomTypeId];
-		END
+		    RAISERROR( 'There already is such room type' , 11, 13) WITH NOWAIT;
+        END;
+
+		SELECT @RoomTypeId = COUNT(*) + 1
+		FROM [dbo].[RoomType] [RoomType];
+		INSERT INTO [dbo].[RoomType] ([RoomTypeId], [Name])
+		SELECT @RoomTypeId, @Name;
+		SELECT @RoomTypeId AS [RoomTypeId];
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 9);
+        RAISERROR( @Message , 11, 13);
     END CATCH;
 END;
 GO
@@ -119,24 +118,30 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-		IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[RoomType] [RoomType]
-			WHERE [RoomType].[RoomTypeId] = @RoomTypeId
+		IF EXISTS(SELECT 1
+		    FROM [dbo].[Price] [Price]
+			WHERE [Price].[RoomTypeId] = @RoomTypeId AND [Price].[StartDate] = @StartDate
 		)
 		BEGIN
-		    RAISERROR( 'There is already price in this period for given room type' , 1, 6) WITH NOWAIT;
-		END
-		ELSE
+		    RAISERROR( 'There is already price in this period for given room type' , 11, 9) WITH NOWAIT;
+		END;
+		
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[RoomType]
+			WHERE [RoomTypeId] = @RoomTypeId
+		)
 		BEGIN
-			BEGIN TRANSACTION;
-			    INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId])
-			    SELECT NEWID(), GETDATE(), @Value, @EndDate, @RoomTypeId;
-			COMMIT TRANSACTION;
-		END
+			RAISERROR( 'There is no such room type' , 11, 9) WITH NOWAIT;
+		END;
+
+		BEGIN TRANSACTION;
+		    INSERT INTO [dbo].[Price] ([PriceId], [StartDate], [Value], [EndDate], [RoomTypeId])
+		    SELECT NEWID(), @StartDate, @Value, @EndDate, @RoomTypeId;
+		COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 6);
+        RAISERROR( @Message , 11, 9);
 		ROLLBACK TRANSACTION;
     END CATCH;
 END;
@@ -150,40 +155,37 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-	    DECLARE @RoomId [uniqueidentifier];
 		IF EXISTS(
 			SELECT 1
 			FROM [dbo].[Room] [Room]
 			WHERE [Room].[Number] = @Number
 		)
 		BEGIN
-		    SELECT @RoomId = [Room].[RoomId] 
-			FROM [dbo].[Room] [Room] 
-			WHERE [Room].[Number] = @Number 
-		    RAISERROR( 'There already is a room with such number' , 1, 8) WITH NOWAIT;
-			SELECT @RoomId AS [RoomId]
-		END
-		ELSE
-		BEGIN 
-		    IF NOT EXISTS(SELECT 1
-			    FROM [dbo].[RoomType] [RoomType]
-				WHERE [RoomType].[RoomTypeId] = @RoomTypeId
-			)
-			BEGIN
-			    RAISERROR( 'There is no such room type' , 1, 8) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-				SELECT @RoomId = NEWID();
-				INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId])
-				SELECT @RoomId, @Number, @Area, @RoomTypeId;
-				SELECT @RoomId AS [RoomId];
-			END
-		END
+		    RAISERROR( 'There already is a room with such number' , 11, 12) WITH NOWAIT;
+		END;
+
+		IF (@Area <= 0)
+		BEGIN
+		    RAISERROR( 'Area cannot be negative or equal to zero' , 11, 12) WITH NOWAIT;
+		END;
+
+		IF NOT EXISTS(SELECT 1
+		    FROM [dbo].[RoomType] [RoomType]
+			WHERE [RoomType].[RoomTypeId] = @RoomTypeId
+		)
+		BEGIN
+		    RAISERROR( 'There is no such room type' , 11, 12) WITH NOWAIT;
+		END;
+
+		DECLARE @RoomId [uniqueidentifier];
+		SELECT @RoomId = NEWID();
+		INSERT INTO [dbo].[Room] ([RoomId], [Number], [Area], [RoomTypeId])
+		SELECT @RoomId, @Number, @Area, @RoomTypeId;
+		SELECT @RoomId AS [RoomId];
     END TRY
     BEGIN CATCH
 		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 8);
+        RAISERROR( @Message , 11, 12);
     END CATCH;
 END;
 GO
@@ -195,30 +197,34 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 	BEGIN TRY
-		IF NOT EXISTS(SELECT 1
-			FROM [dbo].[Owner] [Owner]
-		    WHERE [Owner].[OwnerId] = @OwnerId
+		IF EXISTS(SELECT 1
+			FROM [dbo].[Asset] [Asset]
+		    WHERE [Asset].[RoomId] = @RoomId
 	    )
 		BEGIN
-		    RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
-		END
-		ELSE
+		    RAISERROR( 'Room already belongs to someone' , 11, 4) WITH NOWAIT;
+		END;
+		
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[Owner]
+			WHERE [OwnerId] = @OwnerId
+		)
 		BEGIN
-			IF NOT EXISTS(SELECT 1
-				FROM [dbo].[Owner] [Owner]
-				WHERE [Owner].[OwnerId] = @OwnerId
-		    )
-			BEGIN
-				RAISERROR( 'There is no such owner' , 1, 1) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-				DECLARE @AssetId [uniqueidentifier] = NEWID();
-				INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId])
-				SELECT @AssetId, @OwnerId, @RoomId;
-				SELECT @AssetId AS [AssetId]
-			END
+			RAISERROR( 'There is no such owner' , 11, 4) WITH NOWAIT;
 		END
+
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[Room]
+			WHERE [RoomId] = @RoomId
+		)
+		BEGIN
+			RAISERROR( 'There is no such room' , 11, 4) WITH NOWAIT;
+		END
+
+		DECLARE @AssetId [uniqueidentifier] = NEWID();
+		INSERT INTO [dbo].[Asset] ([AssetId], [OwnerId], [RoomId])
+		SELECT @AssetId, @OwnerId, @RoomId;
+		SELECT @AssetId AS [AssetId]
     END TRY
     BEGIN CATCH
 		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
@@ -242,29 +248,25 @@ BEGIN
 			WHERE [Tenant].[TenantId] = @TenantId
 		)
 		BEGIN
-		    RAISERROR( 'There is no such tenant', 1, 2) WITH NOWAIT;
-		END
-		ELSE
+		    RAISERROR( 'There is no such tenant', 11, 5) WITH NOWAIT;
+		END;
+		
+		IF NOT EXISTS(SELECT 1
+		    FROM [dbo].[Asset] [Asset]
+			WHERE [Asset].[AssetId] = @AssetId
+		)
 		BEGIN
-		    IF NOT EXISTS(SELECT 1
-			    FROM [dbo].[Asset] [Asset]
-				WHERE [Asset].[AssetId] = @AssetId
-			)
-			BEGIN
-                RAISERROR( 'There is no room with such number', 1, 2) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-				DECLARE @BillId [uniqueidentifier] = NEWID();
-				INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate])
-				SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate;
-				SELECT @BillId AS [BillId];
-			END
-		END
+            RAISERROR( 'There is no such asset', 11, 5) WITH NOWAIT;
+		END;
+			
+		DECLARE @BillId [uniqueidentifier] = NEWID();
+		INSERT INTO [dbo].[Bill] ([BillId], [TenantId], [AssetId], [BillAmount], [IssueDate], [EndDate])
+		SELECT @BillId, @TenantId, @AssetId, @Amount, @IssueDate, @EndDate;
+		SELECT @BillId AS [BillId];
     END TRY
     BEGIN CATCH
 		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 2);
+        RAISERROR( @Message , 11, 5);
     END CATCH;
 END;
 GO
@@ -287,20 +289,18 @@ BEGIN
 			    OR @EndDay BETWEEN [Impost].[StartDate] AND [Impost].[EndDate]
 		)
 		BEGIN
-		    RAISERROR( 'There already is imposts at this time', 1, 3) WITH NOWAIT;
-		END
-		ELSE
-		BEGIN
-			BEGIN TRANSACTION;
-				INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate])
-				SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay;
-			COMMIT TRANSACTION;
-		END
+		    RAISERROR( 'There already is imposts at this time', 11, 6) WITH NOWAIT;
+		END;
+
+		BEGIN TRANSACTION;
+			INSERT INTO [dbo].[Impost] ([ImpostId], [Tax], [Fine], [PaymentDay], [StartDate], [EndDate])
+			SELECT NEWID(), @Tax, @Fine, @PaymentDay, @StartDay, @EndDay;
+		COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE()
-            RAISERROR( @Message , 11, 3);
+            RAISERROR( @Message , 11, 6);
 			ROLLBACK TRANSACTION;
     END CATCH;
 END;
@@ -314,32 +314,30 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_Payment_Insert]
 AS
 BEGIN
     SET NOCOUNT ON;
-    BEGIN TRY
+    BEGIN TRY		
+		IF NOT EXISTS(SELECT 1
+		FROM [dbo].[Bill] [Bill]
+		WHERE [Bill].[BillId] = @BillId
+		)
+		BEGIN
+			RAISERROR( 'There is no such bill', 11, 8) WITH NOWAIT;
+		END;
 
-		IF @PaymentDay IS NULL
+		IF NOT EXISTS(SELECT 1
+		FROM [dbo].[Tenant]
+		WHERE [TenantId] = @TenantId
+		)
 		BEGIN
-			RAISERROR( 'PaymentDay is not defined', 1, 7) WITH NOWAIT;
-		END
-		ELSE
-		BEGIN
-			IF NOT EXISTS(SELECT 1
-		    FROM [dbo].[Bill] [Bill]
-			WHERE [Bill].[BillId] = @BillId
-			    AND [Bill].[TenantId] = @TenantId
-			)
-			BEGIN
-				RAISERROR( 'There is no such bill for this tenant', 1, 7) WITH NOWAIT;
-			END
-			ELSE
-			BEGIN
-				INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount])
-				SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount;
-			END
-		END
+			RAISERROR( 'There is no such tenant', 11, 8) WITH NOWAIT;
+		END;
+
+		INSERT INTO [dbo].[Payment] ([PaymentId], [TenantId], [BillId], [PaymentDay], [Amount])
+		SELECT NEWID(), @TenantId, @BillId, @PaymentDay, @Amount;
+
     END TRY
     BEGIN CATCH
 		    DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 9);
+        RAISERROR( @Message , 11, 8);
     END CATCH;
 END;
 GO
@@ -358,7 +356,7 @@ BEGIN
 			WHERE @StartDate BETWEEN [Rent].[StartDate] AND [Rent].[EndDate] AND @AssetId = [Rent].[AssetId]
 		)
 		BEGIN
-			RAISERROR( 'The room in this dates is taken', 1, 7) WITH NOWAIT;
+			RAISERROR( 'The room in this dates is taken', 11, 10) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
@@ -367,18 +365,20 @@ BEGIN
 				WHERE [Tenant].[TenantId] = @TenantId
 			)
 			BEGIN
-			    RAISERROR( 'There is no such tenant', 1, 7) WITH NOWAIT;
+			    RAISERROR( 'There is no such tenant', 11, 10) WITH NOWAIT;
 			END
 			ELSE
 			BEGIN
+				DECLARE @RentId [uniqueidentifier] = NEWID();
 				INSERT INTO [dbo].[Rent] ([RentId], [AssetId], [TenantId], [StartDate], [EndDate])
-				SELECT NEWID(), @AssetId, @TenantId, @StartDate, @EndDate;
+				SELECT @RentId, @AssetId, @TenantId, @StartDate, @EndDate;
+				SELECT @RentId AS [RentId];
 			END
 		END
     END TRY
     BEGIN CATCH
 		DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-        RAISERROR( @Message , 11, 7);
+        RAISERROR( @Message , 11, 10);
     END CATCH;
 END;
 GO
@@ -394,7 +394,7 @@ BEGIN
 			WHERE [Accommodation].[Name] = @Name
 		)
 		BEGIN
-			RAISERROR( 'Such accommotation exists', 1, 12) WITH NOWAIT;
+			RAISERROR( 'Such accommotation exists', 11, 1) WITH NOWAIT;
 		END
 		ELSE
 		BEGIN
@@ -411,7 +411,7 @@ BEGIN
     BEGIN CATCH
         IF @@TRANCOUNT > 0
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 12);
+            RAISERROR( @Message , 11, 1);
 			ROLLBACK TRANSACTION;
         END CATCH;
     END;
@@ -419,22 +419,44 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_AccommodationRoom_Insert]
 @AccommodationId [int],
-@RoomId [uniqueidentifier]
+@RoomId [uniqueidentifier],
+@Quantity [int]
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[Accommodation]
+			WHERE [AccommodationId] = @AccommodationId
+		)
+		BEGIN
+			RAISERROR('There is no such accommodation' , 11, 2);
+		END;
+
+		IF NOT EXISTS(SELECT 1
+			FROM [dbo].[Room]
+			WHERE [RoomId] = @RoomId
+		)
+		BEGIN
+			RAISERROR('There is no such room' , 11, 2);
+		END;
+
+		IF @Quantity < 1
+		BEGIN
+			RAISERROR('Quantity cannot be lower than 1' , 11, 2);
+		END;
+
 		DECLARE @AccommodationRoomId [uniqueidentifier] = NEWID();
 		BEGIN TRANSACTION;
-			INSERT INTO [dbo].[AccommodationRoom] ([AccommodationRoomId], [AccommodationId], [RoomId])
-			SELECT @AccommodationRoomId, @AccommodationId, @RoomId;
+			INSERT INTO [dbo].[AccommodationRoom] ([AccommodationRoomId], [AccommodationId], [RoomId], [Quantity])
+			SELECT @AccommodationRoomId, @AccommodationId, @RoomId, @Quantity;
 		COMMIT TRANSACTION;
 		SELECT @AccommodationRoomId AS [AccommodationRoomId];
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
 			DECLARE @Message [nvarchar](100) = 'An error occurred: ' + ERROR_MESSAGE();
-            RAISERROR( @Message , 11, 13);
+            RAISERROR( @Message , 11, 2);
 			ROLLBACK TRANSACTION;
         END CATCH;
     END;
@@ -972,7 +994,7 @@ BEGIN
 	('Pacific Coast Ventures');
 
 	INSERT INTO #TempTenantDirectorName
-	SELECT TOP(10) CONCAT ([FirstName].[FirstName], [LastName].[LastName]) AS [Name]
+	SELECT TOP(10) CONCAT ([FirstName].[FirstName], ' ' , [LastName].[LastName]) AS [Name]
 	FROM [#TempFirstName] [FirstName], [#TempLastName] [LastName]
 	ORDER BY NEWID();
 
@@ -1150,7 +1172,7 @@ BEGIN
 
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-	    INSERT INTO #TempRoomTypeId EXEC [dbo].[sp_RoomType_Insert] @Name = @Name, @UserName = 'test_user';
+	    INSERT INTO #TempRoomTypeId EXEC [dbo].[sp_RoomType_Insert] @Name = @Name;
 	    FETCH NEXT FROM RoomType_cursor INTO 
         @Name;
 	END
@@ -1260,16 +1282,6 @@ BEGIN
 	LEFT JOIN [dbo].[Room] AS [Room] ON [Room].[RoomId] = [Asset].[RoomId]
 	LEFT JOIN [dbo].[Price] AS [Price] ON [Price].[RoomTypeId] = [Room].[RoomTypeId]
 	WHERE [Rent].[EndDate] BETWEEN [Price].[StartDate] AND [Price].[EndDate];
-  
-	UPDATE #TempBill
-	SET [BillAmount] = [BillAmount] * [Impost].[Tax] * CASE 
-		WHEN DATEDIFF(day, [IssueDate], DATEADD(MONTH, 1, [IssueDate])) > [Impost].[PaymentDay] THEN POWER(1 + [Impost].[Fine], DATEDIFF(day, [IssueDate], DATEADD(MONTH, 1, [IssueDate])) - [Impost].[PaymentDay]) 
-		ELSE 1 
-		END
-	FROM [dbo].[Impost] [Impost]
-	WHERE [IssueDate] BETWEEN [Impost].[StartDate] AND [Impost].[EndDate];
-
-
 
 	OPEN Bill_cursor;
 

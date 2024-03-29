@@ -2,11 +2,10 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Accommodation' and xtype='U'
 CREATE TABLE [dbo].[Accommodation](
 	[AccommodationId] [int] NOT NULL,
 	[Name] [nvarchar](255) NOT NULL,
-  [CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
-  [CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
-  [ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
-  [ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
-
+	[CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
+	[CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
+	[ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
+	[ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
 	CONSTRAINT [PK_Accommodation] PRIMARY KEY ([AccommodationId])
 );
 GO
@@ -16,10 +15,11 @@ CREATE TABLE [dbo].[AccommodationRoom](
 	[AccommodationRoomId] [uniqueidentifier] NOT NULL,
 	[AccommodationId] [int] NOT NULL,
 	[RoomId] [uniqueidentifier] NOT NULL,
-  [CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
-  [CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
-  [ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
-  [ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
+	[Quantity] [int] NOT NULL,
+	[CreatedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
+	[CreatedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
+	[ModifiedBy] [uniqueidentifier] DEFAULT CONVERT(UNIQUEIDENTIFIER, CONVERT(BINARY(16), SUSER_SID())) NOT NULL,
+	[ModifiedDateTime] [datetime2] DEFAULT GETDATE() NOT NULL,
 	CONSTRAINT [PK_AccommodationRoom] PRIMARY KEY ([AccommodationRoomId])
 );
 GO
